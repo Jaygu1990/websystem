@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Catching Game</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div id="game-container">
+    <div id="left-container">
+      <div id="pokemon-list">
+        <h3>登录网站选择Game，免费参与游戏，赢免费卡包！</h3>
+        <h3>Click game in our website，join free game，win free packs！</h3>
+        <h3>单日首轮游戏送一盒sv8a伊布，随后游戏随机送3包各种宝可梦卡包。</h3>
+        <h3>Free sv8a box for the first game of the day, and all different free packs for rest games.</h3>
+        <h3>坐标温哥华，可寄美国加拿大，国内朋友请勿参与。</h3>
+        <div id="buttons-container0">
+          <h4>Players in the Pool: <span id="game-queue-count">0</span></h4>
+          <button id="clear-game-queue" onclick="clearGameQueue()">Clear Game Pool</button>
+          <button id="select-random" onclick="selectRandomCustomers()">Select 6 Players</button>
+        </div>
+
+        <ul id="pokemon-list">
+          {% for pokemon in pokemon_list %}
+            <li class="pokemon-item" id="pokemon-{{ loop.index }}">
+              <img class="pokemon-image" src="{{ url_for('static', filename='images/' + pokemon + '.png') }}" alt="{{ pokemon }}">
+              {{ pokemon.capitalize() }}: <span class="customer-name"></span>
+            </li>
+          {% endfor %}
+        </ul>
+        
+      </div>
+    </div>
+
+    <div id="right-container">
+      <div id="game-area">
+        {% for pokemon in pokemon_list %}
+          <div class="pokemon-grid-cell">
+            <img class="pokemon-game-image" id="pokemon-{{ loop.index }}" src="{{ url_for('static', filename='images/' + pokemon + '.png') }}" alt="{{ pokemon }}">
+          </div>
+        {% endfor %}
+        <!-- Pokéball Image -->
+        <img id="pokeball" src="{{ url_for('static', filename='images/pokeball.png') }}" alt="Poké Ball">
+      </div>
+      
+      <!-- Buttons below Pokémon list -->
+      <div id="buttons-container">
+        <button id="start-button" onclick="startGame()">Start Game</button>
+
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Fetch the game queue count and update the number of customers who paid for the "draw"
+    function fetchQueueData() {
+      fetch('/queue_data')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('game-queue-count').textContent = data.game_queue_count;
+        });
+    }
+
+    // Clear the game queue
+    function clearGameQueue() {
+      fetch('/clear_game_queue', { method: 'POST' })
+        .then(response => {
+          if (response.ok) {
+            fetchQueueData();  // Refresh the game queue count
+          }
+        });
+    }
+
+    // Select 12 random customers and assign them to Pokémon names
+// Select 12 random customers and assign them to Pokémon names
+  function selectRandomCustomers() {
+    fetch('/select_random_customers', { method: 'POST' })
+      .then(response => response.json())
+      .then(data => {
+        // Loop through the Pokémon list and assign customers to each Pokémon
+        for (let i = 0; i < 6; i++) {
+          let pokemonId = 'pokemon-' + (i + 1);  // Pokémon IDs are from pokemon-1 to pokemon-12
+          let customer = data[i];  // Assuming the data returned is an array of customers
+
+          // Find the <span> with the class 'customer-name' within each Pokémon item
+          let customerNameSpan = document.querySelector(`#${pokemonId} .customer-name`);
+          if (customerNameSpan) {
+            // Assign the customer's full name to the Pokémon
+            customerNameSpan.textContent = `${customer.first_name} ${customer.last_name}`;
+          }
+        }
+      });
+  }
+
+
+    // Update the queue data every 3 seconds
+    setInterval(fetchQueueData, 3000);
+  </script>
+  <script src="{{ url_for('static', filename='game.js') }}"></script>
+</body>
+</html>
+
+
+

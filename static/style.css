@@ -1,0 +1,129 @@
+/* General Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+/* Game Container */
+#game-container {
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  align-items: center;
+  padding: 20px;
+  max-width: 900px;
+  margin: auto;
+}
+
+/* Pokémon List */
+#pokemon-list {
+  text-align: center;
+  width: 100%;
+  padding: 10px;
+  font-size: 18px; /* Increase font size for Pokémon names */
+}
+
+#pokemon-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  list-style: none;
+}
+
+.pokemon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+}
+
+.pokemon-image {
+  width: 80px;
+  height: auto;
+}
+
+/* Game Area */
+#right-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+#game-area {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 5 columns */
+  gap: 10px;
+  position: relative;
+  height: 500px;
+  max-width: 600px;
+}
+
+.pokemon-grid-cell {
+  width: 100%;
+  height: 120px;
+  position: relative;
+}
+
+.pokemon-game-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Pokéball */
+#pokeball {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  z-index: 1;
+  transition: all 0.1s ease;
+}
+
+/* Start Button */
+#start-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto; /* Center button */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 900px) {
+  #pokemon-list ul {
+    grid-template-columns: repeat(3, 1fr); /* 3 items per row on smaller screens */
+  }
+
+  #game-area {
+    grid-template-columns: repeat(3, 1fr); /* Reduce columns for smaller screens */
+  }
+}
+
+@media (max-width: 600px) {
+  #pokemon-list ul {
+    flex-direction: row; /* Keep Pokémon list in row format */
+    justify-content: space-between;
+    width: 100%; /* Ensure it doesn't stretch too much */
+  }
+
+  #game-area {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on mobile */
+  }
+
+  /* Ensure the button is below and centered */
+  #start-button {
+    margin-top: 30px;
+  }
+}
+
+
+  
