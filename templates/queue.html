@@ -35,19 +35,9 @@
         新手北美直播间，坐标温哥华，喜欢可以问主播进群。
     </h1>
 
-
-
-    <h1 style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-        开到sv9莉莉艾SAR，sv8a月伊布SAR送奇树P卡。开到月伊布大师球和错版N，送一盒sv8a。
-    </h1>
-
-    <h1 style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-        Free sv9 promo card for pulling Lillie's Clefairy ex 126/100 SAR or Umbreon ex  217/187 SAR.
-    </h1>
-    <h1 style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-        Free sv8a for pulling Umbreon Masterballー 092/187 or Error Zoroark ex 131/100 UR.
-    </h1>
-
+    <div id="buttons-container1">
+        <button id="clear_list" onclick="clearQueue()">Clear Queue Table</button>
+    </div>
 
     <table id="queue-table">
         <tr>
@@ -116,6 +106,18 @@
                     });
                 });
         }
+
+
+        function clearQueue() {
+            fetch('/clear_queue', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  // Refresh the game queue count
+                }
+              });
+          }
+
+
 
         setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
     </script>

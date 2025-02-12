@@ -15,47 +15,51 @@ pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle',    'eevee', 'm
 def webhook():
     data = request.json
     print("Received Webhook:", data)
-    if data:
-        # Extract necessary information
-        product_name = data['line_items'][0]['name']
-        quantity = data['line_items'][0]['quantity']
-        
-        if data['shipping_address']:
-            first_name = data['shipping_address']['first_name']  # or shipping_address['first_name']
-        else:
-            first_name = "NA"
+    
+    nums = len(data['line_items'])
+    
+    for num in range(nums):
+        if data:
+            # Extract necessary information
+            product_name = data['line_items'][num]['name']
+            quantity = data['line_items'][num]['quantity']
             
-        if data['shipping_address']:
-            last_name = data['shipping_address']['last_name']  # or shipping_address['last_name']
-        else:
-            last_name = "NA"
-            
-        if data['shipping_address']:
-            city = data['shipping_address']['city']
-        else:
-            city= "NA"
-            
-        if data['shipping_address']:
-            state = data['shipping_address']['province'] 
-        else:
-            state = "NA"
+            if data['shipping_address']:
+                first_name = data['shipping_address']['first_name']  # or shipping_address['first_name']
+            else:
+                first_name = "NA"
+                
+            if data['shipping_address']:
+                last_name = data['shipping_address']['last_name']  # or shipping_address['last_name']
+            else:
+                last_name = "NA"
+                
+            if data['shipping_address']:
+                city = data['shipping_address']['city']
+            else:
+                city= "NA"
+                
+            if data['shipping_address']:
+                state = data['shipping_address']['province'] 
+            else:
+                state = "NA"
 
-        customer_data = {
-            "id": data["id"],
-            "completed": False,
-            "product_name": product_name,
-            "quantity": quantity,
-            "first_name": first_name,
-            "last_name": last_name,
-            "city": city,
-            "state": state
-        }
-        
-        if product_name.lower() != "pokemon game":
-            queue.append(customer_data)
-        # Add to game_queue only if the product is "draw"
-        if product_name.lower() == "pokemon game":
-            game_queue.append(customer_data)
+            customer_data = {
+                "id": data["id"],
+                "completed": False,
+                "product_name": product_name,
+                "quantity": quantity,
+                "first_name": first_name,
+                "last_name": last_name,
+                "city": city,
+                "state": state
+            }
+            
+            if product_name.lower() != "pokemon game":
+                queue.append(customer_data)
+            # Add to game_queue only if the product is "draw"
+            if product_name.lower() == "pokemon game":
+                game_queue.append(customer_data)
         
     return jsonify({"status": "success"}), 200
 
@@ -90,6 +94,12 @@ def index():
 @app.route('/clear_game_queue', methods=['POST'])
 def clear_game_queue():
     game_queue.clear()  # Clear the game queue
+    return '', 204  # No content response
+
+
+@app.route('/clear_queue', methods=['POST'])
+def clear_game_queue():
+    queue.clear()  # Clear the game queue
     return '', 204  # No content response
 
 
