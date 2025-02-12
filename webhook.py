@@ -98,7 +98,7 @@ def clear_game_queue():
 
 
 @app.route('/clear_queue', methods=['POST'])
-def clear_game_queue():
+def clear_queue():
     queue.clear()  # Clear the game queue
     return '', 204  # No content response
 
