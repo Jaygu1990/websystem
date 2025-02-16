@@ -58,7 +58,6 @@
             <td>{{ item.last_name[:1] }}</td>
             <td>{{ item.city }}</td>
             <td>{{ item.state }}</td>
-            <td>{{ item.shippingoption }}</td>
             <td id="status-{{ loop.index0 }}">
                 {% if item.completed %}
                     <span class="done-mark">✔ All Done</span>
@@ -100,7 +99,6 @@
                             <td>${item.last_name.charAt(0)}.</td>
                             <td>${item.city}</td>
                             <td>${item.state}</td>
-                            <td>${item.shippingoption}</td>
                             <td id="status-${index}">
                                 ${item.completed ? '<span class="done-mark">✔ All Done</span>' : `<button class="done-btn" onclick="markAsDone(${index})">Let's Open the Pack</button>`}
                             </td>

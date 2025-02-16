@@ -23,11 +23,11 @@ def webhook():
             # Extract necessary information
             product_name = data['line_items'][num]['name']
             quantity = data['line_items'][num]['quantity']
-            shipping = data['shipping_lines'][num]['code'] if data['shipping_lines'] else None
-            if shipping != '[HOLD ORDER] SHIPPING NOT FREE(LIVE ONLY)':
-                shippingoption = "Yes"
-            else:
-                shippingoption = "No"
+            # shipping = data['shipping_lines'][num]['code'] if data['shipping_lines'] else None
+            # if shipping != '[HOLD ORDER] SHIPPING NOT FREE(LIVE ONLY)':
+            #     shippingoption = "Yes"
+            # else:
+            #     shippingoption = "No"
                 
             if data['shipping_address']:
                 first_name = data['shipping_address']['first_name']  # or shipping_address['first_name']
@@ -57,8 +57,8 @@ def webhook():
                 "first_name": first_name,
                 "last_name": last_name,
                 "city": city,
-                "state": state,
-                "shipping": shippingoption
+                "state": state
+                # "shipping": shippingoption
             }
             
             if product_name.lower() != "pokemon game":
