@@ -47,6 +47,7 @@
             <th>Last Name</th>
             <th>City</th>
             <th>State</th>
+            <th>Shiping</th>
             <th>Action</th>
         </tr>
         {% for item in queue %}
@@ -57,6 +58,7 @@
             <td>{{ item.last_name[:1] }}</td>
             <td>{{ item.city }}</td>
             <td>{{ item.state }}</td>
+            <td>{{ item.shippingoption }}</td>
             <td id="status-{{ loop.index0 }}">
                 {% if item.completed %}
                     <span class="done-mark">✔ All Done</span>
