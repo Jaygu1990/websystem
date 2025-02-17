@@ -176,7 +176,9 @@ def home():
             </style>
         </head>
         <body>
-            <h1>北美直播间，可寄美国加拿大</h1>
+            <h1>Located in Vancouver, Ship to USA & Canada</h1>
+            <h1>Free pack give away every 10 mins for new followers and buyers</h1>
+            <h1>Free Iono's Kilowattrel AR 104/100 give away to one buyer in the end of stream</h1>
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>
