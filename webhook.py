@@ -60,12 +60,13 @@ def webhook():
                 "state": state
                 # "shipping": shippingoption
             }
+       
             
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
             # Add to game_queue only if the product is "draw"
-            if product_name.lower() == "pokemon game":
-                game_queue.append(customer_data)
+            # if product_name.lower() == "pokemon game":
+            #     game_queue.append(customer_data)
         
     return jsonify({"status": "success"}), 200
 
