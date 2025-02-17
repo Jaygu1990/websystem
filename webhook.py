@@ -180,6 +180,11 @@ def home():
             <h1>Located in Vancouver, Ship to USA & Canada</h1>
             <h1>Free pack give away every 10 mins for new followers and buyers</h1>
             <h1>Free Iono's Kilowattrel AR 104/100 give away to one buyer at the end of stream</h1>
+            
+            <h1>35 CAD to open SV9 Battle Partners Packs until AR or better</h1>
+            
+            
+            
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>
