@@ -133,8 +133,7 @@ def select_random_customers():
 
 
 
-socketio = SocketIO(app)
-
+socketio = SocketIO(app, async_mode="gevent")
 # Define available Pokémon Trainer images
 Trainers = [
     "/static/Pokemon_images/ash.png",
