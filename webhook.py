@@ -65,9 +65,7 @@ def webhook():
             
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
-            print("产品是",product_name)
             if product_name == 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle':
-                print("抓到产品")
                 user_list.append(first_name.split()[0])
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
