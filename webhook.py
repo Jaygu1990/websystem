@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import random
 from flask_socketio import SocketIO, emit
+import eventlet  # Ensure this import is present if needed
 
 app = Flask(__name__)
 
@@ -133,7 +134,7 @@ def select_random_customers():
 
 
 
-socketio = SocketIO(app, async_mode="gevent")
+socketio = SocketIO(app, async_mode='eventlet') 
 # Define available Pokémon Trainer images
 Trainers = [
     "/static/Pokemon_images/ash.png",
