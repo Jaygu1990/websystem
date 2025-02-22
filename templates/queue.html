@@ -37,8 +37,11 @@
 
     <div id="buttons-container1">
         <button id="clear_list" onclick="clearQueue()">Clear Queue Table</button>
+        <button id="clear_list" onclick="clearBattle()">Clear Battle</button>
     </div>
 
+        
+   
     <table id="queue-table">
         <tr>
             <th>Quantity</th>
@@ -112,11 +115,18 @@
             fetch('/clear_queue', { method: 'POST' })
               .then(response => {
                 if (response.ok) {
-                    fetchQueue();  // Refresh the game queue count
+                    fetchQueue();  
                 }
               });
           }
-
+          function clearBattle() {
+            fetch('/clear_battle', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
 
 
         setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds

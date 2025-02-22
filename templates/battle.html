@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Page</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            background: url('/static/Pokemon_images/firstbackground.png') no-repeat center center fixed;
+            background-size: cover; /* Ensures the image covers the entire screen */
+            display: flex;
+            justify-content: center; /* Center the content horizontally */
+            align-items: flex-start; /* Align items to the start vertically */
+            height: 100vh; /* Full height of the viewport */
+            margin: 0; /* Remove default margin */
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            align-items: center; /* Center the content horizontally */
+            margin-top: 50px; /* Adjust this value to move content down */
+        }
+
+        #trainers {
+            display: flex; /* Use flexbox for horizontal layout */
+            justify-content: center; /* Center trainers horizontally */
+            width: 80%; /* Make the trainer container full width */
+            margin-top: 20px; /* Space below the header */
+        }
+        
+        .section {
+            display: flex;
+            justify-content: center; /* Center content in each section */
+            margin: 20px; /* Space between sections */
+        }
+        
+        .trainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px; /* Modify this for gap between trainers */
+            margin-top: 250px; /* Add this line to move the image and text lower */
+        }
+        
+
+        img {
+            width: 130px; /* Modify this for image size */
+            height: auto;
+        }
+
+        h1 {
+            text-align: center; /* Center the header */
+            margin-bottom: 20px; /* Space below header */
+            font-size: 36px; /* Increase the size of the main header */
+        }
+        
+        h2 {
+            margin: 10px 0; /* Space above and below trainer name */
+            font-size: 30px; /* Increase the size of the trainer name */
+            font-weight: bold;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1 id="status">The winner will get a free English Evolving Skies Pack</h1>
+        <div id="trainers">
+            <div class="section">
+                <div class="trainer">
+                    <h2 id="text1">Waiting for a trainer...</h2>
+                    <img id="image1" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                </div>
+            </div>
+            <div class="section">
+                <div class="trainer">
+                    <h2 id="text2">Waiting for a trainer...</h2>
+                    <img id="image2" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                </div>
+            </div>
+            <div class="section">
+                <div class="trainer">
+                    <h2 id="text3">Waiting for a trainer...</h2>
+                    <img id="image3" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <script>
+        const socket = io();
+        let trainerSlots = [null, null, null]; // Persistent storage for trainers
+    
+        // Simulate a trainer joining the queue (for testing)
+        setInterval(() => {
+            socket.emit('join_queue');
+        }, 5000); // Every 5 seconds
+    
+        // Listen for update response from server
+        socket.on('update_response', function(data) {
+            if (data.finished) {
+                console.log("Received data:", data); // Debugging
+                document.getElementById('status').innerText = "No more trainers in the queue.";
+                return;
+            }
+        
+            data.images.forEach((trainer) => {
+                let index = trainer.index; // Use correct index from backend
+                trainerSlots[index] = trainer; // Store trainer persistently
+                
+            });
+        
+            // Update UI based on trainerSlots
+            for (let i = 0; i < 3; i++) {
+                if (trainerSlots[i]) {
+                    document.getElementById(`text${i + 1}`).innerText = trainerSlots[i].name;  // ✅ FIXED
+                    document.getElementById(`image${i + 1}`).src = trainerSlots[i].image;    // ✅ FIXED
+                } else {
+                    document.getElementById(`text${i + 1}`).innerText = "Waiting for a trainer...";
+                    document.getElementById(`image${i + 1}`).src = "/static/Pokemon_images/pokeball.png";
+                }
+            }
+        
+            // Update status message
+            document.getElementById('status').innerText = trainerSlots.some(t => t !== null) ? 
+                "The winner will get a free English Evolving Skies Pack" : "The winner will get a free English Evolving Skies Pack";
+        });
+        
+    
+        // Listen for clear_images event
+        socket.on('clear_images', function() {
+            // Reset all trainer slots
+            trainerSlots = [null, null, null];
+            
+            // Update the UI to show default Pokéball images
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`text${i + 1}`).innerText = "Waiting for a trainer...";
+                document.getElementById(`image${i + 1}`).src = "/static/Pokemon_images/pokeball.png";
+            }
+    
+            // Update status message
+            document.getElementById('status').innerText = "Waiting for a trainer...";
+        });
+    </script>
+    
+    
+    
+    
+</body>
+</html>
+
+
+
+
+

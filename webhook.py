@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify, render_template
 import random
-
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 
 queue = []
-
+user_list = []
+user_list_holder = []
 game_queue = []
 # List of Pokémon names (you can add more to the list)
 # pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'meowth', 'snorlax', 'psyduck', 'eevee', 'mew', 'lapras','Caterpie','Grimer']
@@ -64,6 +65,9 @@ def webhook():
             
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
+                
+            if product_name.lower().endswith("Battle"):
+                user_list.append(first_name.split()[0])
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
             #     game_queue.append(customer_data)
@@ -130,6 +134,101 @@ def select_random_customers():
 
 
 
+socketio = SocketIO(app)
+
+# Define available Pokémon Trainer images
+Trainers = [
+    "/static/Pokemon_images/ash.png",
+    "/static/Pokemon_images/Brock.png",
+    "/static/Pokemon_images/Dawn.png",
+    "/static/Pokemon_images/Gary.png",
+    "/static/Pokemon_images/James.png",
+    "/static/Pokemon_images/Jesse.png",
+    "/static/Pokemon_images/lillie.png",
+    "/static/Pokemon_images/Misty.png",
+    "/static/Pokemon_images/Professor.png",
+    "/static/Pokemon_images/Giovanni.png",
+    "/static/Pokemon_images/Cynthia.png",
+    
+]
+
+# Image paths
+QUESTION_MARK_IMAGE = "/static/Pokemon_images/question.png"
+POKEBALL_IMAGE = "/static/Pokemon_images/pokeball.png"
+BATTLE_GROUND_IMAGE = "/static/Pokemon_images/background.png"
+INITIAL_BACKGROUND = "/static/Pokemon_images/firstbackground.png"
+
+
+used_images = set() 
+user_index = 0
+
+@app.route('/battle')  # Serve the battle page at this route
+def battle():
+    return render_template('battle.html')  # Render battle.html
+
+@socketio.on('join_queue')
+def handle_join_queue():
+    global user_index  
+
+    current_images = []
+    
+    # Ensure we only process if we have space in user_list_holder
+    while len(user_list_holder) < 3 and user_list:
+        new_text = user_list.pop(0)  # Get the next user name
+        available_images = [img for img in Trainers if img not in used_images]
+
+        if available_images:
+            new_image = random.choice(available_images)  # Select a random unused image
+            used_images.add(new_image)  # Mark this image as used
+            
+            # Assign a persistent index and increment it
+            new_entry = {'index': user_index, 'name': new_text, 'image': new_image}
+            user_list_holder.append(new_entry)  # Add to holder
+            current_images.append(new_entry)
+            user_index += 1  # Move to the next index
+        else:
+            break  # Stop if no available images
+
+    # Send the updated images to the frontend
+    emit('update_response', {'images': user_list_holder, 'finished': len(user_list_holder) > 3})
+
+
+@app.route('/adduser', methods=['POST'])
+def add_user():
+    global user_list
+
+    # Generate a random username between 1 and 100, ensuring uniqueness
+    username = random.randint(1, 100)
+    while username in user_list:  # Ensure uniqueness
+        username = random.randint(1, 100)
+    
+    user_list.append(username)  # Add username to the list
+
+    return jsonify({"message": "User added successfully.", "user_list": user_list}), 200
+
+
+@app.route('/clear_battle', methods=['POST'])
+def clear_battle():
+    global user_index
+    global user_list_holder
+    global user_index
+    global used_images
+    
+    user_index = 0 # Reset index when clearing
+    used_images.clear()  # Reset used images
+    user_list_holder = []
+    
+    # Emit an event to clear the images on the front end
+    socketio.emit('clear_images')
+    
+    return jsonify({"message": "All users cleared.", "user_list": user_list_holder}), 200
+
+
+@app.route('/show', methods=['POST'])
+def show():    
+    return jsonify({"user_list_hold": user_list_holder, "user_list": user_list}), 200
+
+
 
 @app.route('/')
 def home():
@@ -179,18 +278,14 @@ def home():
         <body>
             <h1>Located in Vancouver, Ship to USA & Canada</h1>
             <h1>Free pack give away every 10 mins for new followers and buyers</h1>
-            <h1>Free Iono's Kilowattrel AR 104/100 give away to one buyer at the end of stream</h1>
-            
-            <h1>35 CAD to open SV9 Battle Partners Packs until AR or better</h1>
-            
-            
-            
+
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>
             <div class="button-container">
                 <button class="button" onclick="window.location.href='/queue'">Go to Queue</button>
                 <button class="button" onclick="window.location.href='/game'">Go to Game</button>
+                <button class="button" onclick="window.location.href='/battle'">Go to Battle</button>
             </div>
         </body>
     </html>
