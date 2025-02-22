@@ -1,6 +1,7 @@
 Flask==2.0.1
 Werkzeug==2.2.3
 Flask-SocketIO==5.0.1
-gunicorn==20.1.0
-eventlet==0.31.0
+gunicorn==20.1.0       # or a more recent version
+eventlet==0.33.0       # ensure this is the latest compatible version
+
 
