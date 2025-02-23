@@ -63,9 +63,10 @@ def webhook():
                 # "shipping": shippingoption
             }
        
-            
+  
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
+                game_queue.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
             # Add to game_queue only if the product is "draw"

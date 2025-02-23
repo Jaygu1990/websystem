@@ -11,8 +11,7 @@
   <div id="game-container">
     <div id="left-container">
       <div id="pokemon-list">
-        <h3>Click game in our website，join free game，win free packs！</h3>
-        <h3>Free sv8a box for the first game of the day, and all different free packs for rest games.</h3>
+ 
         <div id="buttons-container0">
           <h4>Players in the Pool: <span id="game-queue-count">0</span></h4>
           <button id="clear-game-queue" onclick="clearGameQueue()">Clear Game Pool</button>
@@ -86,7 +85,8 @@
           let customerNameSpan = document.querySelector(`#${pokemonId} .customer-name`);
           if (customerNameSpan) {
             // Assign the customer's full name to the Pokémon
-            customerNameSpan.textContent = `${customer.first_name} ${customer.last_name}`;
+            customerNameSpan.textContent = customer.first_name.split(" ")[0];
+
           }
         }
       });
