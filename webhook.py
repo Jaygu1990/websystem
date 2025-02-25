@@ -102,9 +102,11 @@ def complete_order(index):
 def index():
     return render_template('index.html', pokemon_list=pokemon_list)
 
-@app.route('/note')
+@app.route("/note")
 def getnote():
-    return render_template('note.html')
+    template_path = os.path.join(app.root_path, "templates", "note.html")
+    print(f"Checking for template at: {template_path}")  # Debugging line
+    return render_template("note.html")
 
 
 @app.route('/clear_game_queue', methods=['POST'])
