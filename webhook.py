@@ -1,7 +1,9 @@
-from flask import Flask, request, jsonify, render_template
 import random
 from flask_socketio import SocketIO, emit
 import eventlet
+eventlet.monkey_patch()
+from flask import Flask, request, jsonify, render_template
+
 
 app = Flask(__name__)
 
