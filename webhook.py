@@ -102,11 +102,7 @@ def complete_order(index):
 def index():
     return render_template('index.html', pokemon_list=pokemon_list)
 
-@app.route("/note")
-def getnote():
-    template_path = os.path.join(app.root_path, "templates", "note.html")
-    print(f"Checking for template at: {template_path}")  # Debugging line
-    return render_template("note.html")
+
 
 
 @app.route('/clear_game_queue', methods=['POST'])
@@ -283,7 +279,9 @@ def home():
         </head>
         <body>
             <h1>Located in Vancouver, Ship to USA & Canada</h1>
-            <h1>Free pack give away every 10 mins for new followers and buyers</h1>
+            <h1>Free pack give away every 10 mins for new followers and buyers.</h1>
+            <h1>Today's New Products: English 151, Chinese 151, and Chinese Gemstone box.</h1>
+            <h1>35 CAD OPEN battle partners packs until AR or better is still on.</h1>
 
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
