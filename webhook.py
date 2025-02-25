@@ -102,6 +102,10 @@ def complete_order(index):
 def index():
     return render_template('index.html', pokemon_list=pokemon_list)
 
+@app.route('/note')
+def getnote():
+    return render_template('note.html')
+
 
 @app.route('/clear_game_queue', methods=['POST'])
 def clear_game_queue():
