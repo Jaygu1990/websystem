@@ -297,7 +297,136 @@ def home():
     </html>
     '''
 
+# ----------------------------------------------------
+import os
+import requests
+import smtplib
+import random
+import string
+from datetime import datetime, timedelta
+from email.mime.text import MIMEText
+from dotenv import load_dotenv  # Import dotenv
 
+# Load environment variables from .env file
+load_dotenv()
+
+# Shopify credentials
+SHOPIFY_STORE_URL = os.getenv("SHOPIFY_STORE_URL")
+API_ACCESS_TOKEN = os.getenv("API_ACCESS_TOKEN")
+
+# Email SMTP configuration
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))  # Default to 587 if not set
+EMAIL_USERNAME = os.getenv("EMAIL_USERNAME")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
+
+
+def generate_discount_code():
+    """Generate a random discount code"""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+
+
+
+def create_shopify_discount(variant_ids):
+    """Create a Shopify discount code and link it to specific product variants."""
+    code = generate_discount_code()  # Generate unique discount code
+    starts_at = (datetime.utcnow() + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": API_ACCESS_TOKEN
+    }
+
+    # Step 1: Create Price Rule
+    price_rule_data = {
+        "price_rule": {
+            "title": f"Discount for {code}",  # Internal name
+            "value_type": "fixed_amount",
+            "value": "-5.00",  # Discount amount
+            "customer_selection": "all",
+            "target_type": "line_item",
+            "target_selection": "entitled",  # Only for entitled products
+            "allocation_method": "each",
+            "starts_at": starts_at,
+            "usage_limit": 1,
+            "once_per_customer": True,
+            "combinable": False,
+            "entitled_variant_ids": variant_ids  # Restrict to specific product variants
+        }
+    }
+
+    price_rule_url = f"{SHOPIFY_STORE_URL}/admin/api/2023-10/price_rules.json"
+    price_rule_response = requests.post(price_rule_url, json=price_rule_data, headers=headers)
+
+    if price_rule_response.status_code != 201:
+        print(f"❌ Failed to create price rule: {price_rule_response.status_code} {price_rule_response.text}")
+        return None
+
+    price_rule_id = price_rule_response.json()["price_rule"]["id"]
+
+    # Step 2: Create Discount Code
+    discount_code_data = {
+        "discount_code": {
+            "code": code,  # Actual discount code customers will use
+            "price_rule_id": price_rule_id
+        }
+    }
+
+    discount_code_url = f"{SHOPIFY_STORE_URL}/admin/api/2023-10/price_rules/{price_rule_id}/discount_codes.json"
+    discount_code_response = requests.post(discount_code_url, json=discount_code_data, headers=headers)
+
+    if discount_code_response.status_code == 201:
+        print(f"✅ Discount code created successfully: {code}")
+        return code
+    else:
+        print(f"❌ Failed to create discount code: {discount_code_response.status_code} {discount_code_response.text}")
+        return None
+
+
+def send_email(recipient, code):
+    """Send the coupon code via email"""
+    subject = "Your Shopify Discount Code"
+    body = f"Here is your discount code: {code}\n\nUse it at checkout!"
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_USERNAME
+    msg["To"] = recipient
+
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_USERNAME, recipient, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print("Email error:", e)
+        return False
+
+@app.route("/coupon", methods=["GET", "POST"])
+def generate_coupon():
+    if request.method == "GET":
+        return render_template("coupon.html")  # Return the form page
+
+    email = request.form.get("email")
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    code = generate_discount_code()
+    variant_ids = [51808417612148,51808408764788, 51808185483636, 51746827305332, 51753653207412,51806220714356,51728814866804,51728819716468,
+                   51728820404596,51728818602356,51728815817076,51728819782004, 51728820240756, 51728821027188,51728820797812,51728819487092,51728819847540,51806224875892 ]  
+
+    discount_id = create_shopify_discount(variant_ids)
+    if not discount_id:
+        return jsonify({"error": "Failed to create discount"}), 500
+
+    if send_email(email, discount_id):
+        return jsonify({"success": f"Discount code {discount_id} sent to {email}!"})
+    else:
+        return jsonify({"error": "Failed to send email"}), 500
 
 
 
