@@ -4,5 +4,7 @@ Flask-SocketIO==5.3.0  # or the latest version
 gunicorn>=20.0
 eventlet>=0.33
 dnspython>=2.0
+requests>=2.0.0
+
 
 
