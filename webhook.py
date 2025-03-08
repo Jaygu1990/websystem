@@ -345,7 +345,7 @@ def create_shopify_discount(variant_ids):
         "price_rule": {
             "title": f"Discount for {code}",  # Internal name
             "value_type": "fixed_amount",
-            "value": "-5.10",  # Discount amount
+            "value": "-5.00",  # Discount amount
             "customer_selection": "all",
             "target_type": "line_item",
             "target_selection": "entitled",  # Only for entitled products
