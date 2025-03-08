@@ -333,6 +333,7 @@ def create_shopify_discount(variant_ids):
     """Create a Shopify discount code and link it to specific product variants."""
     code = generate_discount_code()  # Generate unique discount code
     starts_at = (datetime.utcnow() + timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    ends_at = (datetime.utcnow() + timedelta(weeks=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     headers = {
         "Content-Type": "application/json",
@@ -344,12 +345,13 @@ def create_shopify_discount(variant_ids):
         "price_rule": {
             "title": f"Discount for {code}",  # Internal name
             "value_type": "fixed_amount",
-            "value": "-5.00",  # Discount amount
+            "value": "-5.10",  # Discount amount
             "customer_selection": "all",
             "target_type": "line_item",
             "target_selection": "entitled",  # Only for entitled products
             "allocation_method": "each",
             "starts_at": starts_at,
+            "ends_at": ends_at, 
             "usage_limit": 1,
             "once_per_customer": True,
             "combinable": False,
@@ -416,7 +418,7 @@ def generate_coupon():
         return jsonify({"error": "Email is required"}), 400
 
     code = generate_discount_code()
-    variant_ids = [51808417612148,51808408764788, 51808185483636, 51746827305332, 51753653207412,51806220714356,51728814866804,51728819716468,
+    variant_ids = [51808417612148,51808408764788, 51808185483636, 51746827305332, 51753653207412,51806220714356,51728814866804,51728819716468,51806536827252,
                    51728820404596,51728818602356,51728815817076,51728819782004, 51728820240756, 51728821027188,51728820797812,51728819487092,51728819847540,51806224875892 ]  
 
     discount_id = create_shopify_discount(variant_ids)
@@ -427,6 +429,29 @@ def generate_coupon():
         return jsonify({"success": f"Discount code {discount_id} sent to {email}!"})
     else:
         return jsonify({"error": "Failed to send email"}), 500
+
+# ----------------------------------------------------
+
+# Pokémon list with probabilities
+POKEMON_PROBABILITIES = {
+    "pikachu.png": 0.3,    # 30%
+    "charizard.png": 0.2,  # 20%
+    "bulbasaur.png": 0.15, # 15%
+    "squirtle.png": 0.15,  # 15%
+    "gengar.png": 0.1,     # 10%
+    "mewtwo.png": 0.05,    # 5%
+    "eevee.png": 0.05      # 5%
+}
+
+def spin_slot():
+    """Selects 3 Pokémon images based on their probabilities."""
+    pokemon, weights = zip(*POKEMON_PROBABILITIES.items())
+    return random.choices(pokemon, weights=weights, k=3)
+
+@app.route("/spin", methods=["GET"])
+def spin():
+    results = spin_slot()
+    return jsonify(result=["images/" + img for img in results])  # Return JSON, not a rendered template
 
 
 

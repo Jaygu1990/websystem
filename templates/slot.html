@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Slot Machine</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .slot-machine { display: flex; justify-content: center; margin-top: 20px; }
+        .slot { width: 100px; height: 100px; margin: 10px; border: 2px solid black; overflow: hidden; }
+        .slot img { width: 100px; height: 100px; }
+        button { padding: 10px 20px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+        #result { font-size: 24px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Pokémon Slot Machine</h1>
+    <div class="slot-machine">
+        <div class="slot"><img id="slot1" src="static/pokeball.png" alt="Slot 1"></div>
+        <div class="slot"><img id="slot2" src="static/pokeball.png" alt="Slot 2"></div>
+        <div class="slot"><img id="slot3" src="static/pokeball.png" alt="Slot 3"></div>
+    </div>
+    <button onclick="spinSlot()">Spin</button>
+    <p id="result"></p>
+
+    async function spinSlot() {
+        document.getElementById("result").innerText = "Spinning...";
+        
+        const response = await fetch('/spin');
+        const data = await response.json();
+        const results = data.result;
+    
+        setTimeout(() => {
+            document.getElementById("slot1").src = "/static/" + results[0];
+            document.getElementById("slot2").src = "/static/" + results[1];
+            document.getElementById("slot3").src = "/static/" + results[2];
+    
+            if (results[0] === results[1] && results[1] === results[2]) {
+                document.getElementById("result").innerText = "JACKPOT! 🎉";
+            } else {
+                document.getElementById("result").innerText = "Try again!";
+            }
+        }, 2000);
+    }
+    
+</body>
+</html>
+
