@@ -37,7 +37,8 @@
 
     <div id="buttons-container1">
         <button id="clear_list" onclick="clearQueue()">Clear Queue Table</button>
-        <button id="clear_list" onclick="clearBattle()">Clear Battle</button>
+        <button id="battle" onclick="clearBattle()">Clear Battle</button>
+        <button id="Energy" onclick="Energy()">Run Energy</button>
     </div>
 
         
@@ -127,7 +128,14 @@
                 }
               });
           }
-
+          function Energy() {
+            fetch('/start-slot-machine', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
 
         setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
     </script>

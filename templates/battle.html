@@ -8,7 +8,7 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
         body {
-            background: url('/static/Pokemon_images/firstbackground.png') no-repeat center center fixed;
+            background: url('/static/Pokemon_images/pokemonbackground.png') no-repeat center center fixed;
             background-size: cover; /* Ensures the image covers the entire screen */
             display: flex;
             justify-content: center; /* Center the content horizontally */
@@ -25,32 +25,40 @@
         }
 
         #trainers {
-            display: flex; /* Use flexbox for horizontal layout */
+            display: flex;
+            flex-direction: column; /* Stack trainers vertically */
             justify-content: center; /* Center trainers horizontally */
             width: 80%; /* Make the trainer container full width */
             margin-top: 20px; /* Space below the header */
         }
         
-        .section {
-            display: flex;
-            justify-content: center; /* Center content in each section */
-            margin: 20px; /* Space between sections */
-        }
-        
         .trainer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 30px; /* Modify this for gap between trainers */
-            margin-top: 250px; /* Add this line to move the image and text lower */
+            display: flex; /* Align h2 and img horizontally */
+            align-items: center; /* Vertically align items (img and h2) */
+            margin-bottom: 30px; /* Space between each trainer */
+            justify-content: flex-start; /* Align content to the left */
+            width: 100%; /* Ensure the trainer container takes full width */
         }
         
+        .images {
+            display: flex;
+            align-items: center; /* Aligns images vertically in the center */
+            gap: 20px; /* Adds space between the two images */
+        }
 
         img {
-            width: 130px; /* Modify this for image size */
+            width: 50px;
+            height: auto;
+            margin-left: 10px; /* Add space between the image and the text */
+        }
+
+        .images img[id^="question"] {
+            width: 100px;  /* Adjust this value as needed */
             height: auto;
         }
 
+
+        
         h1 {
             text-align: center; /* Center the header */
             margin-bottom: 20px; /* Space below header */
@@ -58,59 +66,86 @@
         }
         
         h2 {
-            margin: 10px 0; /* Space above and below trainer name */
-            font-size: 30px; /* Increase the size of the trainer name */
-            font-weight: bold;
+            font-size: 16px;
+            margin: 0; /* Remove margin to ensure alignment */
+            padding-left: 50px; /* Move the text a bit to the left */
+            flex-grow: 1; /* Allow the text to grow and take available space */
+            text-align: right; /* Align the text to the right side */
         }
         
     </style>
 </head>
 <body>
     <div class="content">
-        <h1 id="status">The winner will get a free English Evolving Skies Pack</h1>
         <div id="trainers">
             <div class="section">
                 <div class="trainer">
                     <h2 id="text1">Waiting for a trainer...</h2>
-                    <img id="image1" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                    <div class="images">
+                        <img id="image1" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                        <img id="question1" src="/static/Pokemon_images/question.png" alt="Question Image">
+                    </div>
                 </div>
             </div>
             <div class="section">
                 <div class="trainer">
                     <h2 id="text2">Waiting for a trainer...</h2>
-                    <img id="image2" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                    <div class="images">
+                        <img id="image2" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                        <img id="question2" src="/static/Pokemon_images/question.png" alt="Question Image">
+                    </div>
                 </div>
             </div>
             <div class="section">
                 <div class="trainer">
                     <h2 id="text3">Waiting for a trainer...</h2>
-                    <img id="image3" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                    <div class="images">
+                        <img id="image3" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                        <img id="question3" src="/static/Pokemon_images/question.png" alt="Question Image">
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="trainer">
+                    <h2 id="text4">Waiting for a trainer...</h2>
+                    <div class="images">
+                        <img id="image4" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                        <img id="question4" src="/static/Pokemon_images/question.png" alt="Question Image">
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="trainer">
+                    <h2 id="text5">Waiting for a trainer...</h2>
+                    <div class="images">
+                        <img id="image5" src="/static/Pokemon_images/pokeball.png" alt="Pokeball">
+                        <img id="question5" src="/static/Pokemon_images/question.png" alt="Question Image">
+                    </div>
                 </div>
             </div>
         </div>
+        
     </div>
-
 
 
 
 
     <script>
         const socket = io();
-        let trainerSlots = [null, null, null]; // Persistent storage for trainers
+        let trainerSlots = [null, null, null, null, null]; // Persistent storage for trainers
     
         // Simulate a trainer joining the queue (for testing)
         setInterval(() => {
             socket.emit('join_queue');
-        }, 5000); // Every 5 seconds
+        }, 100); // Every 2 seconds
     
         // Listen for update response from server
         socket.on('update_response', function(data) {
             if (data.finished) {
-                console.log("Received data:", data); // Debugging
                 document.getElementById('status').innerText = "No more trainers in the queue.";
                 return;
             }
-        
+            
             data.images.forEach((trainer) => {
                 let index = trainer.index; // Use correct index from backend
                 trainerSlots[index] = trainer; // Store trainer persistently
@@ -118,7 +153,7 @@
             });
         
             // Update UI based on trainerSlots
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 5; i++) {
                 if (trainerSlots[i]) {
                     document.getElementById(`text${i + 1}`).innerText = trainerSlots[i].name;  // ✅ FIXED
                     document.getElementById(`image${i + 1}`).src = trainerSlots[i].image;    // ✅ FIXED
@@ -136,22 +171,76 @@
     
         // Listen for clear_images event
         socket.on('clear_images', function() {
-            // Reset all trainer slots
-            trainerSlots = [null, null, null];
+            trainerSlots = [null, null, null, null, null];
             
             // Update the UI to show default Pokéball images
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 5; i++) {
                 document.getElementById(`text${i + 1}`).innerText = "Waiting for a trainer...";
                 document.getElementById(`image${i + 1}`).src = "/static/Pokemon_images/pokeball.png";
+                document.getElementById(`question${i + 1}`).src = "/static/Pokemon_images/question.png";
             }
     
             // Update status message
             document.getElementById('status').innerText = "Waiting for a trainer...";
         });
+
+        let stopUpdates = false;  // Flag to control whether to stop updates
+
+        function fetchLatestState() {
+            fetch('/get-latest-state')
+                .then(response => response.json())
+                .then(data => {
+                    if (!stopUpdates) {  // Only update if final result hasn't been received
+                        if (data.energy1 == 0) {
+                            // Set all question images to question.png if energy1 is 0
+                            $('#question1').attr('src', `/static/Pokemon_images/question.png`);
+                            $('#question2').attr('src', `/static/Pokemon_images/question.png`);
+                            $('#question3').attr('src', `/static/Pokemon_images/question.png`);
+                            $('#question4').attr('src', `/static/Pokemon_images/question.png`);
+                            $('#question5').attr('src', `/static/Pokemon_images/question.png`);
+                        } else {
+                            updateSlotMachineUI(data);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching latest state:', error));
+        }
+        
+        // Set an interval to pull the latest state every second
+        setInterval(fetchLatestState, 1000);
+        
+        function updateSlotMachineUI(data) {
+            $('#question1').attr('src', `/static/Pokemon_images/${data.energy1}.png`);
+            $('#question2').attr('src', `/static/Pokemon_images/${data.energy2}.png`);
+            $('#question3').attr('src', `/static/Pokemon_images/${data.energy3}.png`);
+            $('#question4').attr('src', `/static/Pokemon_images/${data.energy4}.png`);
+            $('#question5').attr('src', `/static/Pokemon_images/${data.energy5}.png`);
+        }
+        
+        socket.on('update_slot_machine', function(data) {
+            if (!stopUpdates) {  // Only update if final result hasn't been received
+                updateSlotMachineUI(data);
+            }
+        });
+        
+        socket.on('final_slot_machine', function(data) {
+            console.log('Final numbers:', data);
+            
+            if (data.final) {
+                stopUpdates = true;  
+                updateSlotMachineUI(data);
+            }
+        });
+        
+        socket.on('trigger_page_refresh', function(data) {
+            if (data.refresh) {
+                location.reload();  // Refresh the page when the backend triggers it
+            }
+        });
+        
+
     </script>
-    
-    
-    
+
     
 </body>
 </html>

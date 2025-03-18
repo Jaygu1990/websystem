@@ -4,8 +4,15 @@ from flask import Flask
 from flask import request, jsonify, render_template
 import random
 from flask_socketio import SocketIO, emit
+import logging
+import sys
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+import time
+import threading
+
 
 app = Flask(__name__)
+socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
 
 queue = []
 user_list = []
@@ -13,6 +20,14 @@ user_list_holder = []
 game_queue = []
 # List of Pokémon names (you can add more to the list)
 # pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'meowth', 'snorlax', 'psyduck', 'eevee', 'mew', 'lapras','Caterpie','Grimer']
+
+latest_state = {
+    'energy1': 0,
+    'energy2': 0,
+    'energy3': 0,
+    'energy4': 0,
+    'energy5': 0
+}
 
 pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle',    'eevee', 'mew']
 @app.route('/webhook', methods=['POST'])
@@ -69,7 +84,7 @@ def webhook():
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
                 game_queue.append(customer_data)
-            if product_name == 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle':
+            if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
@@ -139,7 +154,7 @@ def select_random_customers():
 
 
 
-socketio = SocketIO(app, async_mode='eventlet') 
+
 # Define available Pokémon Trainer images
 Trainers = [
     "/static/Pokemon_images/ash.png",
@@ -177,7 +192,7 @@ def handle_join_queue():
     current_images = []
     
     # Ensure we only process if we have space in user_list_holder
-    while len(user_list_holder) < 3 and user_list:
+    while len(user_list_holder) < 5 and user_list:
         new_text = user_list.pop(0)  # Get the next user name
         available_images = [img for img in Trainers if img not in used_images]
 
@@ -194,7 +209,7 @@ def handle_join_queue():
             break  # Stop if no available images
 
     # Send the updated images to the frontend
-    emit('update_response', {'images': user_list_holder, 'finished': len(user_list_holder) > 3})
+    emit('update_response', {'images': user_list_holder, 'finished': len(user_list_holder) > 5})
 
 
 @app.route('/adduser', methods=['POST'])
@@ -221,7 +236,13 @@ def clear_battle():
     user_index = 0 # Reset index when clearing
     used_images.clear()  # Reset used images
     user_list_holder = []
-    
+    latest_state = {
+        'energy1': 0,
+        'energy2': 0,
+        'energy3': 0,
+        'energy4': 0,
+        'energy5': 0
+    }    
     # Emit an event to clear the images on the front end
     socketio.emit('clear_images')
     
@@ -231,6 +252,62 @@ def clear_battle():
 @app.route('/show', methods=['POST'])
 def show():    
     return jsonify({"user_list_hold": user_list_holder, "user_list": user_list}), 200
+
+
+energy1 = [1, 2, 3, 4, 5] * 10
+energy2 = [2, 3, 4, 5, 1] * 10
+energy3 = [3, 4, 5, 1, 2] * 10
+energy4 = [4, 5, 1, 2, 3] * 10
+energy5 = [5, 1, 2, 3, 4] * 10
+
+
+@app.route('/get-latest-state', methods=['GET'])
+def get_latest_state():
+    
+    return jsonify(latest_state)
+
+def send_numbers():
+    index = 0
+    while index < len(energy1):
+        latest_state.update({
+            'energy1': energy1[index],
+            'energy2': energy2[index],
+            'energy3': energy3[index],
+            'energy4': energy4[index],
+            'energy5': energy5[index]
+        })
+        socketio.emit('update_slot_machine', latest_state)
+        time.sleep(0.1)  # Emit every 0.1 seconds
+        index += 1
+        
+    energy_numbers = [1, 2, 3, 4, 5]
+    random.shuffle(energy_numbers)
+    # After finishing the updates, emit the final random result
+    final_state = {
+        'energy1': energy_numbers[0],
+        'energy2': energy_numbers[1],
+        'energy3': energy_numbers[2],
+        'energy4': energy_numbers[3],
+        'energy5': energy_numbers[4],
+        'final': True
+    }
+    latest_state.update(final_state)
+
+    socketio.emit('final_slot_machine', latest_state)
+
+    
+@app.route('/test', methods=['POST'])
+def test():
+    print(latest_state)
+    return 'Slot machine triggered!', 200
+
+@app.route('/start-slot-machine', methods=['POST'])
+def start_slot_machine():
+    socketio.emit('trigger_page_refresh', {'refresh': True})
+    time.sleep(0.1) 
+    threading.Thread(target=send_numbers).start()
+    return 'Slot machine triggered!', 200
+
 
 
 
@@ -456,5 +533,10 @@ def spin():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    import eventlet
+    import eventlet.wsgi
+    eventlet.monkey_patch()  # Critical for eventlet to handle concurrency properly
+    
+    # Use `socketio.run()` with `eventlet` explicitly specified
+    socketio.run(app, host='0.0.0.0', port=5000)
 
