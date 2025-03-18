@@ -232,6 +232,7 @@ def clear_battle():
     global user_list_holder
     global user_index
     global used_images
+    global latest_state
     
     user_index = 0 # Reset index when clearing
     used_images.clear()  # Reset used images
@@ -263,7 +264,6 @@ energy5 = [5, 1, 2, 3, 4] * 10
 
 @app.route('/get-latest-state', methods=['GET'])
 def get_latest_state():
-    
     return jsonify(latest_state)
 
 def send_numbers():
