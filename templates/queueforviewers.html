@@ -75,7 +75,7 @@
                 .then(response => response.json())
                 .then(data => {
                     let table = document.getElementById("queue-table");
-                    table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>First Name</th><th>Action</th></tr>`; // Reset table headers
+                    table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>First Name</th><th>Action</th></tr>`; 
 
                     data.queue.forEach((item, index) => {
                         let row = document.createElement("tr");

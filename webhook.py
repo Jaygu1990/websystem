@@ -15,7 +15,6 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
 
 queue = []
-queueforviewers=[]
 user_list = []
 user_list_holder = []
 game_queue = []
@@ -89,7 +88,6 @@ def webhook():
                 queue.append(customer_data)
                 game_queue.append(customer_data)
                 if product_name.lower() != "shipping":
-                    queueforviewers.append(customer_data)
                     print_jobs.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
@@ -125,7 +123,7 @@ def get_queue():
 
 @app.route('/queueforviewers', methods=['GET'])
 def get_queueforviewers():
-    return render_template('queueforviewers.html', queue=queueforviewers)
+    return render_template('queueforviewers.html', queue=queue)
 
 @app.route('/queue_data', methods=['GET'])
 def queue_data():
@@ -162,7 +160,6 @@ def clear_game_queue():
 @app.route('/clear_queue', methods=['POST'])
 def clear_queue():
     queue.clear()
-    queueforviewers.clear()
     print_jobs.clear()
     return '', 204  # No content response
 
