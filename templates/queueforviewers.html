@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Table</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .done-btn {
+            background-color: transparent;
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .done-mark {
+            font-size: 20px;
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+        Queue Table
+    </h1>   
+    <table id="queue-table">
+        <tr>
+            <th>Quantity</th>
+            <th>Product</th>
+            <th>First Name</th>
+            <th>Action</th>
+        </tr>
+        {% for item in queue %}
+        <tr id="row-{{ loop.index0 }}">
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.first_name }}</td>
+            <td id="status-{{ loop.index0 }}">
+                {% if item.completed %}
+                    <span class="done-mark">✔ All Done</span>
+                {% else %}
+                    <button class="done-btn" onclick="markAsDone({{ loop.index0 }})">
+                        Let's Open the Pack
+                    </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    
+
+    <script>
+        function markAsDone(index) {
+            fetch(`/complete/${index}`, { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        document.getElementById(`status-${index}`).innerHTML = '<span class="done-mark">✔ All Done</span>';
+                    }
+                });
+        }
+
+        function fetchQueue() {
+            fetch('/queue_data')
+                .then(response => response.json())
+                .then(data => {
+                    let table = document.getElementById("queue-table");
+                    table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>First Name</th><th>Action</th></tr>`; // Reset table headers
+
+                    data.queue.forEach((item, index) => {
+                        let row = document.createElement("tr");
+                        row.id = `row-${index}`;
+                        row.innerHTML = `
+                            <td>${item.quantity}</td>
+                            <td>${item.product_name}</td>
+                            <td>${item.first_name}</td>
+                            <td id="status-${index}">
+                                ${item.completed ? '<span class="done-mark">✔ All Done</span>' : `<button class="done-btn" onclick="markAsDone(${index})">Let's Open the Pack</button>`}
+                            </td>
+                        `;
+                        table.appendChild(row);
+                    });
+                });
+        }
+
+
+        function clearQueue() {
+            fetch('/clear_queue', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
+          function clearBattle() {
+            fetch('/clear_battle', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
+          function Energy() {
+            fetch('/start-slot-machine', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
+
+        setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
+    </script>
+</body>
+</html>

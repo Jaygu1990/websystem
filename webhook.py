@@ -15,6 +15,7 @@ app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
 
 queue = []
+queueforviewers=[]
 user_list = []
 user_list_holder = []
 game_queue = []
@@ -28,6 +29,9 @@ latest_state = {
     'energy4': 0,
     'energy5': 0
 }
+
+
+print_jobs = []
 
 pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle',    'eevee', 'mew']
 @app.route('/webhook', methods=['POST'])
@@ -84,6 +88,9 @@ def webhook():
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
                 game_queue.append(customer_data)
+                if product_name.lower() != "shipping":
+                    queueforviewers.append(customer_data)
+                    print_jobs.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
             # Add to game_queue only if the product is "draw"
@@ -95,6 +102,11 @@ def webhook():
 @app.route('/queue', methods=['GET'])
 def get_queue():
     return render_template('queue.html', queue=queue)
+
+
+@app.route('/queueforviewers', methods=['GET'])
+def get_queueforviewers():
+    return render_template('queueforviewers.html', queue=queueforviewers)
 
 @app.route('/queue_data', methods=['GET'])
 def queue_data():
@@ -130,7 +142,8 @@ def clear_game_queue():
 
 @app.route('/clear_queue', methods=['POST'])
 def clear_queue():
-    queue.clear()  # Clear the game queue
+    queue.clear() 
+    print_jobs.clear()
     return '', 204  # No content response
 
 
@@ -367,6 +380,7 @@ def home():
             </div>
             <div class="button-container">
                 <button class="button" onclick="window.location.href='/queue'">Go to Queue</button>
+                <button class="button" onclick="window.location.href='/queueforviewers'">Go to Queue for viewers</button>
                 <button class="button" onclick="window.location.href='/game'">Go to Game</button>
                 <button class="button" onclick="window.location.href='/battle'">Go to Battle</button>
             </div>
@@ -530,6 +544,12 @@ def spin():
     results = spin_slot()
     return jsonify(result=["images/" + img for img in results])  # Return JSON, not a rendered template
 
+
+
+
+@app.route("/get_print_jobs", methods=["GET"])
+def get_print_jobs():
+    return jsonify(print_jobs), 200
 
 
 if __name__ == '__main__':
