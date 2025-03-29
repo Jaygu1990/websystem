@@ -3,7 +3,7 @@ import requests
 import win32print
 import win32ui
 
-FLASK_SERVER_URL = "http://localhost:5000//"
+FLASK_SERVER_URL = "http://websystem-kkmd.onrender.com//"
 print_jobs = []  # Store processed jobs to avoid duplicates
 
 def print_text(customer_data):

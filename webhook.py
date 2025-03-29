@@ -161,7 +161,8 @@ def clear_game_queue():
 
 @app.route('/clear_queue', methods=['POST'])
 def clear_queue():
-    queue.clear() 
+    queue.clear()
+    queueforviewers.clear()
     print_jobs.clear()
     return '', 204  # No content response
 
@@ -402,6 +403,7 @@ def home():
                 <button class="button" onclick="window.location.href='/queueforviewers'">Go to Queue for viewers</button>
                 <button class="button" onclick="window.location.href='/game'">Go to Game</button>
                 <button class="button" onclick="window.location.href='/battle'">Go to Battle</button>
+                <button class="button" onclick="window.location.href='/coupon'">Go to Coupon</button>
             </div>
         </body>
     </html>
