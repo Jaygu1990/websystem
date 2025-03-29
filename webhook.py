@@ -99,6 +99,25 @@ def webhook():
         
     return jsonify({"status": "success"}), 200
 
+@app.route('/add_dummy_order', methods=['POST'])
+def add_order():
+    # Create dummy order data
+    dummy_order = {
+        "id": random.randint(1000, 9999),  # Generate a random order ID
+        "completed": False,
+        "product_name": "Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle",
+        "quantity": random.randint(1, 5),  # Random quantity between 1 and 5
+        "first_name": "John",
+        "last_name": "Doe",
+        "city": "Vancouver",
+        "state": "BC"
+    }
+    print_jobs.append(dummy_order)
+    
+    
+    return jsonify({"message": "Dummy order added", "order": dummy_order})
+
+
 @app.route('/queue', methods=['GET'])
 def get_queue():
     return render_template('queue.html', queue=queue)

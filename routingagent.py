@@ -3,11 +3,11 @@ import requests
 import win32print
 import win32ui
 
-FLASK_SERVER_URL = "https://websystem-kkmd.onrender.com/"
+FLASK_SERVER_URL = "http://localhost:5000//"
 print_jobs = []  # Store processed jobs to avoid duplicates
 
-def print_text(job):
-    """ Prints the customer details except 'id' and 'completed'. """
+def print_text(customer_data):
+    """ Prints the selected customer details: 'first_name', 'last_name', 'quantity', 'product_name', 'city', 'state', wrapping long text. """
     printer_name = "M220 Printer"  # Set your printer manually
     hprinter = win32print.OpenPrinter(printer_name)
     hprinter_dc = win32ui.CreateDC()
@@ -16,13 +16,56 @@ def print_text(job):
     hprinter_dc.StartDoc("Cloud Print Job")
     hprinter_dc.StartPage()
     
-    # Filter out 'id' and 'completed'
-    filtered_data = {k: v for k, v in job.items() if k not in ["id", "completed"]}
+    # Extract selected fields from the customer data
+    first_name = customer_data.get("first_name", "N/A")
+    last_name = customer_data.get("last_name", "N/A")
+    quantity = customer_data.get("quantity", "N/A")
+    product_name = customer_data.get("product_name", "N/A")
+    city = customer_data.get("city", "N/A")
+    state = customer_data.get("state", "N/A")
+    
+    # Prepare the order details to print
+    order_details = [
+        f"First Name: {first_name}",
+        f"Last Name: {last_name}",
+        f"Quantity: {quantity}",
+        f"Product Name: {product_name}",
+        f"City: {city}",
+        f"State: {state}"
+    ]
     
     y_offset = 100  # Start position for printing
-    for key, value in filtered_data.items():
-        hprinter_dc.TextOut(100, y_offset, f"{key}: {value}")  # Print each field
-        y_offset += 30  # Move down for next line
+    max_line_length = 20  # Maximum number of characters per line before wrapping
+    
+    def wrap_text(text, max_length):
+        """ Wraps the text to fit the specified max length. """
+        words = text.split(" ")
+        lines = []
+        current_line = ""
+        
+        for word in words:
+            # Check if adding the word exceeds max length
+            if len(current_line + " " + word) <= max_length:
+                current_line += " " + word if current_line else word
+            else:
+                lines.append(current_line)
+                current_line = word
+        
+        # Add any remaining line
+        if current_line:
+            lines.append(current_line)
+        
+        return lines
+    
+    # Print each detail, wrapping long lines
+    for detail in order_details:
+        # Wrap the text if it's too long
+        wrapped_lines = wrap_text(detail, max_line_length)
+        
+        # Print each wrapped line
+        for line in wrapped_lines:
+            hprinter_dc.TextOut(100, y_offset, line)
+            y_offset += 30  # Move down for next line
     
     hprinter_dc.EndPage()
     hprinter_dc.EndDoc()
@@ -33,13 +76,13 @@ def main():
     while True:
         try:
             response = requests.get(f"{FLASK_SERVER_URL}/get_print_jobs")
-            
+            print("get response",response)
             if response.status_code == 200:
                 jobs = response.json()
-                
+                print("positive response")
                 # Find new jobs
                 new_jobs = [job for job in jobs if job not in print_jobs]
-                
+                print(new_jobs)
                 for job in new_jobs:
                     print_text(job)  # Print new job
                     print_jobs.append(job)  # Mark as printed
