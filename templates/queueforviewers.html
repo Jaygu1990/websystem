@@ -1,63 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Queue Table</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .done-btn {
-            background-color: transparent;
-            color: black;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .done-mark {
-            font-size: 20px;
-            color: green;
-        }
-    </style>
-</head>
-<body>
-    <h1 style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-        Check the link in bio / wwww.tcgcardsflow.com
-    </h1>   
-    <table id="queue-table">
-        <tr>
-            <th>Quantity</th>
-            <th>Product</th>
-            <th>First Name</th>
-            <th>Action</th>
-        </tr>
-        {% for item in queue %}
-        <tr id="row-{{ loop.index0 }}">
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.product_name }}</td>
-            <td>{{ item.first_name }}</td>
-            <td id="status-{{ loop.index0 }}">
-                {% if item.completed %}
-                    <span class="done-mark">✔ All Done</span>
-                {% else %}
-                    <button class="done-btn" onclick="markAsDone({{ loop.index0 }})">
-                        Let's Open the Pack
-                    </button>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Queue Table</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    
+            body {
+                font-family: 'Press Start 2P', cursive;
+                background: url('/static/Pokemon_images/gifbackground.gif') no-repeat center center;
+                background-size: 150% auto;
+                background-attachment: fixed;
+                text-align: center;
+                color: white;
+            }
+    
+            h1 {
+                font-size: 24px;
+                background: black;
+                color: white;
+                padding: 12px;
+                border-radius: 8px;
+                display: inline-block;
+                border: 4px solid white;
+            }
+    
+            table {
+                width: 80%;
+                margin: 20px auto;
+                border-collapse: collapse;
+                background: #f8f8f8;
+                border: 4px solid black;
+                border-radius: 10px;
+                box-shadow: 5px 5px 0px black;
+            }
+    
+            th, td {
+                padding: 16px;
+                text-align: center;
+                border: 2px solid black;
+                font-size: 14px;
+            }
+    
+            th {
+                background-color: #fdd835; /* Classic Pokémon Yellow */
+                color: black;
+            }
+    
+            tr:nth-child(even) {
+                background-color: #f8f8f8;
+            }
+    
+            tr:nth-child(odd) {
+                background-color: #e8e8e8;
+            }
+    
+            .done-btn {
+                background-color: #ff5733;
+                color: white;
+                border: 3px solid black;
+                padding: 10px 15px;
+                cursor: pointer;
+                font-size: 12px;
+                font-family: 'Press Start 2P', cursive;
+                text-transform: uppercase;
+                border-radius: 5px;
+                box-shadow: 3px 3px 0px black;
+                transition: all 0.2s;
+            }
+    
+            .done-btn:hover {
+                background-color: #c70039;
+                box-shadow: 2px 2px 0px black;
+            }
+    
+            .done-mark {
+                font-size: 18px;
+                color: green;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+    
+        <h1>Check the link in bio / www.tcgcardsflow.com</h1>
+    
+        <table id="queue-table">
+            <tr>
+                <th>Quantity</th>
+                <th>Product</th>
+                <th>First Name</th>
+                <th>Action</th>
+            </tr>
+            {% for item in queue %}
+            <tr id="row-{{ loop.index0 }}">
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.first_name }}</td>
+                <td id="status-{{ loop.index0 }}">
+                    {% if item.completed %}
+                        <span class="done-mark">✔ All Done</span>
+                    {% else %}
+                        <button class="done-btn" onclick="markAsDone({{ loop.index0 }})">
+                            Let's Open the Pack
+                        </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    
+    </body>
+    
+</html>
+
     
 
     <script>
@@ -92,33 +149,6 @@
                     });
                 });
         }
-
-
-        function clearQueue() {
-            fetch('/clear_queue', { method: 'POST' })
-              .then(response => {
-                if (response.ok) {
-                    fetchQueue();  
-                }
-              });
-          }
-          function clearBattle() {
-            fetch('/clear_battle', { method: 'POST' })
-              .then(response => {
-                if (response.ok) {
-                    fetchQueue();  
-                }
-              });
-          }
-          function Energy() {
-            fetch('/start-slot-machine', { method: 'POST' })
-              .then(response => {
-                if (response.ok) {
-                    fetchQueue();  
-                }
-              });
-          }
-
         setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
     </script>
 </body>
