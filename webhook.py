@@ -87,7 +87,7 @@ def webhook():
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
                 game_queue.append(customer_data)
-                if product_name.lower() != "shipping":
+                if product_name.lower() != "shipping" and not customer_data["completed"]:
                     print_jobs.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
