@@ -64,7 +64,7 @@ def print_text(customer_data):
         
         # Print each wrapped line
         for line in wrapped_lines:
-            hprinter_dc.TextOut(100, y_offset, line)
+            hprinter_dc.TextOut(50, y_offset, line)
             y_offset += 30  # Move down for next line
     
     hprinter_dc.EndPage()
