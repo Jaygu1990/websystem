@@ -64,7 +64,7 @@ def print_text(customer_data):
         
         # Print each wrapped line
         for line in wrapped_lines:
-            hprinter_dc.TextOut(50, y_offset, line)
+            hprinter_dc.TextOut(40, y_offset, line)
             y_offset += 30  # Move down for next line
     
     hprinter_dc.EndPage()
@@ -84,8 +84,10 @@ def main():
                 new_jobs = [job for job in jobs if job not in print_jobs]
                 print(new_jobs)
                 for job in new_jobs:
-                    print_text(job)  # Print new job
-                    print_jobs.append(job)  # Mark as printed
+                    completed = job["completed"]
+                    if completed == False:
+                        print_text(job)  
+                        print_jobs.append(job)  # Mark as printed
 
             # Wait before checking again (e.g., 10 seconds)
             time.sleep(10)
