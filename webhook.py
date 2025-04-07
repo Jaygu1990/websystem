@@ -109,8 +109,11 @@ def add_order():
         "city": "Vancouver",
         "state": "BC"
     }
+    first_name = dummy_order['first_name']
     print_jobs.append(dummy_order)
-    
+    queue.append(dummy_order)
+    game_queue.append(dummy_order)
+    user_list.append(first_name.split()[0])
     
     return jsonify({"message": "Dummy order added", "order": dummy_order})
 
