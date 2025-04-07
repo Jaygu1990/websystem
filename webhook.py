@@ -82,12 +82,11 @@ def webhook():
                 "state": state
                 # "shipping": shippingoption
             }
-       
-  
+
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
                 game_queue.append(customer_data)
-                if product_name.lower() != "shipping" and not customer_data["completed"]:
+                if product_name.lower() != "shipping" and product_name != 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                     print_jobs.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
@@ -389,9 +388,6 @@ def home():
         <body>
             <h1>Located in Vancouver, Ship to USA & Canada</h1>
             <h1>Free pack give away every 10 mins for new followers and buyers.</h1>
-            <h1>Today's New Products: English 151, Chinese 151, and Chinese Gemstone box.</h1>
-            <h1>35 CAD OPEN battle partners packs until AR or better is still on.</h1>
-
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>

@@ -8,48 +8,58 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
         body {
-            background: url('/static/Pokemon_images/pokemonbackground.png') no-repeat center center fixed;
+            background: url('/static/Pokemon_images/pokemonbackground.gif') no-repeat center center fixed;
             background-size: cover; /* Ensures the image covers the entire screen */
             display: flex;
             justify-content: center; /* Center the content horizontally */
-            align-items: flex-start; /* Align items to the start vertically */
+            align-items: flex-start;
+            padding-top: 50px; 
             height: 100vh; /* Full height of the viewport */
             margin: 0; /* Remove default margin */
         }
 
         .content {
             display: flex;
-            flex-direction: column; /* Stack elements vertically */
-            align-items: center; /* Center the content horizontally */
-            margin-top: 50px; /* Adjust this value to move content down */
+            justify-content: center;     /* Horizontally center trainers */
+            align-items: flex-start;
+            padding-top: 50px;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;            /* Enable horizontal scroll if needed */
         }
 
         #trainers {
             display: flex;
-            flex-direction: column; /* Stack trainers vertically */
-            justify-content: center; /* Center trainers horizontally */
-            width: 80%; /* Make the trainer container full width */
-            margin-top: 20px; /* Space below the header */
+            flex-direction: row; /* Horizontal layout */
+            gap: 30px;
+            padding: 0 20px;
+            width: 100%;
         }
         
+        .section {
+            flex: 1 0 auto; /* Prevent shrinking */
+        }
+    
         .trainer {
-            display: flex; /* Align h2 and img horizontally */
-            align-items: center; /* Vertically align items (img and h2) */
-            margin-bottom: 30px; /* Space between each trainer */
-            justify-content: flex-start; /* Align content to the left */
-            width: 100%; /* Ensure the trainer container takes full width */
+            display: flex;
+            flex-direction: column; /* Stack text and images vertically */
+            align-items: center;
+     
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 180px;
         }
         
         .images {
             display: flex;
-            align-items: center; /* Aligns images vertically in the center */
-            gap: 20px; /* Adds space between the two images */
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
         }
-
+    
         img {
             width: 50px;
             height: auto;
-            margin-left: 10px; /* Add space between the image and the text */
         }
 
         .images img[id^="question"] {
@@ -72,10 +82,39 @@
             flex-grow: 1; /* Allow the text to grow and take available space */
             text-align: right; /* Align the text to the right side */
         }
+        .back-button {
+            position: absolute;
+            text-decoration: none;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #000;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: background-color 0.2s ease;
+        }
+        
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 1);
+        }
+        
+        .back-home {
+            top: 20px;
+            left: 20px;
+        }
+        
+        .back-queue {
+            top: 70px; /* or whatever spacing you want below the first button */
+            left: 20px;
+        }
         
     </style>
 </head>
 <body>
+    <a href="/" class="back-button back-home">⬅ Back</a>
+    <a href="/queueforviewers" class="back-button back-queue">⚔ Go Queue</a>
+
     <div class="content">
         <div id="trainers">
             <div class="section">
