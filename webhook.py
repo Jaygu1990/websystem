@@ -404,6 +404,7 @@ def home():
                 <button class="button" onclick="window.location.href='/game'">Go to Game</button>
                 <button class="button" onclick="window.location.href='/battle'">Go to Battle</button>
                 <button class="button" onclick="window.location.href='/coupon'">Go to Coupon</button>
+                <button class="button" onclick="window.location.href='/follow'">Go to Followers</button>
             </div>
         </body>
     </html>
