@@ -9,7 +9,9 @@ import sys
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 import time
 import threading
-
+from threading import Thread
+from TikTokLive import TikTokLiveClient
+from TikTokLive.events import ConnectEvent, SocialEvent
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
@@ -18,6 +20,8 @@ queue = []
 user_list = []
 user_list_holder = []
 game_queue = []
+followers = set()
+client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
 # pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'meowth', 'snorlax', 'psyduck', 'eevee', 'mew', 'lapras','Caterpie','Grimer']
 
@@ -569,7 +573,41 @@ def get_print_jobs():
     return jsonify(print_jobs), 200
 
 
+
+@client.on(ConnectEvent)
+async def on_connect(_: ConnectEvent):
+    print("Connected to TikTok LIVE")
+
+async def on_social(event: SocialEvent) -> None:
+    if "followed" in event.base_message.display_text.default_pattern.lower():
+        user_id = event.user.id
+        nickname = event.user.nickname
+        
+        if user_id not in followers:
+            followers.add(user_id)
+            print(f"\nNew follower: {nickname} (ID: {user_id})")
+            print(f"Total followers: {len(followers)}\n")
+
+client.add_listener(SocialEvent, on_social)
+
+
+@app.route('/follow')
+def tiktok_ui():
+    return render_template('tiktok.html')
+
+@app.route('/api/followers')
+def get_followers():
+    return jsonify(list(followers))
+
+@app.route('/api/clear', methods=['POST'])
+def clear_followers():
+    followers.clear()
+    return jsonify({'status': 'cleared'})
+
+
+
 if __name__ == '__main__':
+    Thread(target=client.run, daemon=True).start()
     import eventlet
     import eventlet.wsgi
     eventlet.monkey_patch()  # Critical for eventlet to handle concurrency properly

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TikTok Followers</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .follower {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        #clearBtn {
+            background: #ff0050;
+            color: white;
+            border: none;
+            padding: 12px;
+            margin-top: 16px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Recent Followers</h2>
+    <div id="followerList"></div>
+    <button id="clearBtn">Clear All</button>
+
+    <script>
+        function update() {
+            fetch('/api/followers')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('followerList').innerHTML = 
+                        data.map(f => `<div class="follower">${f}</div>`).join('');
+                });
+        }
+
+        document.getElementById('clearBtn').onclick = () => {
+            if (confirm('Clear all followers?')) {
+                fetch('/api/clear', { method: 'POST' })
+                    .then(update);
+            }
+        };
+
+        // Update every 2 seconds
+        setInterval(update, 2000);
+        update(); // Initial load
+    </script>
+</body>
+</html>
