@@ -1,18 +1,16 @@
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, SocialEvent
 
-# Create a set to store follower user IDs
 followers = set()
 
-# Create the client
-client: TikTokLiveClient = TikTokLiveClient(unique_id="@calipokehouse")
+client: TikTokLiveClient = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 
 @client.on(ConnectEvent)
 async def on_connect(event: ConnectEvent):
     print(f"Connected to @{event.unique_id} (Room ID: {client.room_id})")
 
 async def on_social(event: SocialEvent) -> None:
-    print(event.base_message.display_text)
+
     if "followed" in event.base_message.display_text.default_pattern.lower():
         user_id = event.user.id
         nickname = event.user.nick_name
