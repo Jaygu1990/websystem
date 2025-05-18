@@ -1,7 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 from flask import Flask 
-from flask import request, jsonify, render_template
+from flask import request, jsonify, render_template,redirect, url_for
 import random
 from flask_socketio import SocketIO, emit
 import logging
@@ -10,8 +10,7 @@ logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 import time
 import threading
 from threading import Thread
-from TikTokLive import TikTokLiveClient
-from TikTokLive.events import ConnectEvent, SocialEvent
+
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
@@ -21,7 +20,7 @@ user_list = []
 user_list_holder = []
 game_queue = []
 followers = set()
-client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
+# client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
 # pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'meowth', 'snorlax', 'psyduck', 'eevee', 'mew', 'lapras','Caterpie','Grimer']
 
@@ -405,6 +404,8 @@ def home():
                 <button class="button" onclick="window.location.href='/battle'">Go to Battle</button>
                 <button class="button" onclick="window.location.href='/coupon'">Go to Coupon</button>
                 <button class="button" onclick="window.location.href='/follow'">Go to Followers</button>
+                <button class="button" onclick="window.location.href='/display'">Go to Display</button>
+                <button class="button" onclick="window.location.href='/control'">Go to Control</button>
             </div>
         </body>
     </html>
@@ -575,40 +576,191 @@ def get_print_jobs():
 
 
 
-@client.on(ConnectEvent)
-async def on_connect(_: ConnectEvent):
-    print("Connected to TikTok LIVE")
+# @client.on(ConnectEvent)
+# async def on_connect(_: ConnectEvent):
+#     print("Connected to TikTok LIVE")
 
-async def on_social(event: SocialEvent) -> None:
-    if "followed" in event.base_message.display_text.default_pattern.lower():
-        user_id = event.user.id
-        nickname = event.user.nickname
+# async def on_social(event: SocialEvent) -> None:
+#     if "followed" in event.base_message.display_text.default_pattern.lower():
+#         user_id = event.user.id
+#         nickname = event.user.nickname
         
-        if user_id not in followers:
-            followers.add(user_id)
-            print(f"\nNew follower: {nickname} (ID: {user_id})")
-            print(f"Total followers: {len(followers)}\n")
+#         if user_id not in followers:
+#             followers.add(user_id)
+#             print(f"\nNew follower: {nickname} (ID: {user_id})")
+#             print(f"Total followers: {len(followers)}\n")
 
-client.add_listener(SocialEvent, on_social)
+# client.add_listener(SocialEvent, on_social)
 
 
-@app.route('/follow')
-def tiktok_ui():
-    return render_template('tiktok.html')
+# @app.route('/follow')
+# def tiktok_ui():
+#     return render_template('tiktok.html')
 
-@app.route('/api/followers')
-def get_followers():
-    return jsonify(list(followers))
+# @app.route('/api/followers')
+# def get_followers():
+#     return jsonify(list(followers))
 
-@app.route('/api/clear', methods=['POST'])
-def clear_followers():
-    followers.clear()
-    return jsonify({'status': 'cleared'})
+# @app.route('/api/clear', methods=['POST'])
+# def clear_followers():
+#     followers.clear()
+#     return jsonify({'status': 'cleared'})
+
+
+# names = ["Alice", "Bob", "Charlie"]
+
+# @app.route("/wheel")
+# def wheel():
+#     return render_template("wheel.html", options=names)
+
+# @app.route("/add", methods=["POST"])
+# def add_name():
+#     name = request.form.get("name")
+#     if name and name not in names:
+#         names.append(name)
+#     return redirect(url_for("wheel"))
+
+# @app.route("/edit/<old_name>", methods=["POST"])
+# def edit_name(old_name):
+#     new_name = request.form.get("new_name")
+#     if new_name and old_name in names:
+#         index = names.index(old_name)
+#         names[index] = new_name
+#     return redirect(url_for("wheel"))
+
+# @app.route("/delete/<name>")
+# def delete_name(name):
+#     if name in names:
+#         names.remove(name)
+#     return redirect(url_for("wheel"))
+
+import json
+
+STATE_FILE = 'state.json'
+
+DEFAULT_STATE = {
+    "rounds": [
+        ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png"],
+        ["question.png"] * 4,
+        ["question.png"] * 2,
+        ["question.png"] * 1
+    ],
+    "names": {
+        "1.png": "Espeon",
+        "2.png": "Flareon",
+        "3.png": "Glaceon",
+        "4.png": "Jolteon",
+        "5.png": "Leafeon",
+        "6.png": "Sylveon",
+        "7.png": "Umbreon",
+        "8.png": "Vaporeon"
+    }
+}
+
+
+def init_state():
+    randomized_round1 = DEFAULT_STATE['rounds'][0][:]
+    random.shuffle(randomized_round1)
+    return {
+        "rounds": [
+            randomized_round1,
+            ["question.png"] * 4,
+            ["question.png"] * 2,
+            ["question.png"]
+        ],
+        "names": DEFAULT_STATE['names']
+    }
+
+
+# Initialize the state file if missing
+if not os.path.exists(STATE_FILE):
+    state = init_state()
+    with open(STATE_FILE, 'w') as f:
+        json.dump(state, f)
+
+def load_state():
+    with open(STATE_FILE, 'r') as f:
+        return json.load(f)
+
+def save_state(state):
+    with open(STATE_FILE, 'w') as f:
+        json.dump(state, f)
+
+@app.route('/display')
+def display():
+    state = load_state()
+    return render_template('display.html', rounds=state['rounds'], names=state['names'])
+
+
+@app.route('/control', methods=['GET', 'POST'])
+def control():
+    state = load_state()
+
+    if request.method == 'POST':
+        if 'reset' in request.form:
+            # Reset everything to default: rounds AND names
+            state = DEFAULT_STATE.copy()
+            save_state(state)
+            return redirect(url_for('control'))
+
+        if 'randomize' in request.form:
+            # Load existing state to keep names
+            old_state = load_state()
+            # Create new rounds with randomized round 1 but keep old names
+            randomized_round1 = old_state['rounds'][0][:]
+            random.shuffle(randomized_round1)
+            new_state = {
+                "rounds": [
+                    randomized_round1,
+                    ["question.png"] * 4,
+                    ["question.png"] * 2,
+                    ["question.png"]
+                ],
+                "names": old_state.get('names', DEFAULT_STATE['names'])
+            }
+            save_state(new_state)
+            return redirect(url_for('control'))
+
+        # Check if the form is for updating names
+        if 'update_names' in request.form:
+            for img in state['names'].keys():
+                new_name = request.form.get(img, "").strip()
+                if new_name:
+                    state['names'][img] = new_name
+            save_state(state)
+            return redirect(url_for('control'))
+
+        # Normal update winner logic (your existing code)
+        try:
+            round_index = int(request.form['round'])
+            match_index = int(request.form['match'])
+            winner_raw = request.form['winner'].strip()
+        except (KeyError, ValueError):
+            return redirect(url_for('control'))
+
+        winner = winner_raw if winner_raw.endswith('.png') else f"{winner_raw}.png"
+
+        if round_index + 1 < len(state['rounds']):
+            if 0 <= match_index < len(state['rounds'][round_index + 1]):
+                state['rounds'][round_index + 1][match_index] = winner
+                save_state(state)
+
+        return redirect(url_for('control'))
+
+    return render_template('control.html', rounds=state['rounds'], names=state['names'])
+
+@app.route('/display-data')
+def display_data():
+    state = load_state()
+    return jsonify({
+        'rounds': state['rounds'],
+        'names': state['names']
+    })
 
 
 
 if __name__ == '__main__':
-    Thread(target=client.run, daemon=True).start()
+ 
     import eventlet
     import eventlet.wsgi
     eventlet.monkey_patch()  # Critical for eventlet to handle concurrency properly

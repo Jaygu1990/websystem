@@ -1,0 +1,81 @@
+<!-- templates/wheel.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spinning Wheel</title>
+    <style>
+        #wheel {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 10px solid #333;
+            position: relative;
+            margin: 50px auto;
+            overflow: hidden;
+            transform: rotate(0deg);
+            transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        .segment {
+            width: 50%;
+            height: 50%;
+            position: absolute;
+            transform-origin: 100% 100%;
+            background: #f0f0f0;
+            text-align: right;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #spinBtn {
+            display: block;
+            margin: 20px auto;
+        }
+        #pointer {
+          width: 0;
+          height: 0;
+          border-left: 20px solid transparent;
+          border-right: 20px solid transparent;
+          border-bottom: 30px solid red;
+          margin: 0 auto;
+          position: relative;
+          top: 20px;
+          z-index: 10;
+      }
+      
+    </style>
+</head>
+<body>
+
+  <div id="pointer"></div>
+  <div id="wheel"></div>
+  
+<button id="spinBtn">Spin</button>
+
+<script>
+  const options = {{ options|tojson }};
+  const wheel = document.getElementById('wheel');
+  const angleStep = 360 / options.length;
+  let totalRotation = 0;
+
+  // Draw segments
+  options.forEach((option, i) => {
+      const segment = document.createElement('div');
+      segment.className = 'segment';
+      segment.style.transform = `rotate(${i * angleStep}deg) skewY(-${90 - angleStep}deg)`;
+      segment.style.background = `hsl(${i * angleStep}, 70%, 80%)`;
+      segment.innerHTML = option;
+      wheel.appendChild(segment);
+  });
+
+  // Spin logic
+  document.getElementById('spinBtn').addEventListener('click', () => {
+      const spinDegrees = 360 * 5 + Math.floor(Math.random() * 360);
+      totalRotation += spinDegrees;
+      wheel.style.transition = 'transform 4s ease-out';
+      wheel.style.transform = `rotate(${totalRotation}deg)`;
+  });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+    <title>Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        form {
+            margin-bottom: 30px;
+        }
+        .round {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+            min-width: 150px;
+        }
+        .round h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .match {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        .match img {
+            width: 80px;
+            height: auto;
+            display: block;
+            margin: 0 auto 5px;
+            cursor: pointer;
+        }
+        /* Flex container to hold pairs */
+        .match-pair {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        .match-pair .match {
+            margin: 0 15px;
+        }
+        .winner-text {
+            color: green;
+            font-weight: bold;
+        }
+
+        /* New flex container for all rounds horizontally */
+        .rounds-container {
+            display: flex;
+            gap: 20px; /* space between rounds */
+            overflow-x: auto; /* horizontal scroll if needed */
+            padding: 10px 0;
+        }
+
+        /* Adjust individual round for side-by-side */
+        .round {
+            min-width: 200px;  /* increase width a bit for clarity */
+            margin-bottom: 0;  /* remove bottom margin so they don't add vertical space */
+            flex-shrink: 0;    /* prevent rounds from shrinking */
+            background: #f9f9f9;
+            border-radius: 4px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+
+    </style>
+</head>
+<body>
+<h1>Update Match Result</h1>
+
+<h2>Current Rounds</h2>
+
+{% macro render_round(round_num) %}
+    <div class="round">
+        <h3>Round {{ round_num + 1 }}</h3>
+        {% set current_round = rounds[round_num] %}
+        {% set next_round = rounds[round_num + 1] if round_num + 1 < rounds|length else [] %}
+        {% for i in range(0, current_round|length, 2) %}
+            <div class="match-pair">
+                {% set next_winner_img = next_round[i // 2] if i // 2 < next_round|length else None %}
+                
+                <!-- Left Image -->
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="round" value="{{ round_num }}">
+                    <input type="hidden" name="match" value="{{ i // 2 }}">
+                    <input type="hidden" name="winner" value="{{ current_round[i] }}">
+                    <button type="submit" style="border:none; background:none; padding:0; cursor:pointer;">
+                        <img src="{{ url_for('static', filename='images/' + current_round[i]) }}" alt="{{ current_round[i] }}" width="80">
+                    </button>
+                    {% if current_round[i] == next_winner_img %}
+                        <div class="winner-text">Winner</div>
+                    {% endif %}
+                </form>
+
+                <!-- Right Image -->
+                {% if i + 1 < current_round|length %}
+                <form method="post" style="display:inline; margin-left:10px;">
+                    <input type="hidden" name="round" value="{{ round_num }}">
+                    <input type="hidden" name="match" value="{{ i // 2 }}">
+                    <input type="hidden" name="winner" value="{{ current_round[i + 1] }}">
+                    <button type="submit" style="border:none; background:none; padding:0; cursor:pointer;">
+                        <img src="{{ url_for('static', filename='images/' + current_round[i + 1]) }}" alt="{{ current_round[i + 1] }}" width="80">
+                    </button>
+                    {% if current_round[i + 1] == next_winner_img %}
+                        <div class="winner-text">Winner</div>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+<!-- Render all rounds -->
+<div class="rounds-container">
+    {% for round_num in range(rounds|length) %}
+        {{ render_round(round_num) }}
+    {% endfor %}
+</div>
+
+<!-- Manual form for update (optional, can keep or remove) -->
+<h2>Edit Team/Player Names</h2>
+<form method="post">
+    {% for img, name in names.items() %}
+    <div style="margin-bottom: 10px;">
+        <label for="{{ img }}">{{ img }}:</label>
+        <input type="text" name="{{ img }}" value="{{ name }}">
+        <img src="{{ url_for('static', filename='images/' + img) }}" alt="{{ name }}" width="50" style="vertical-align: middle; margin-left: 10px;">
+    </div>
+    {% endfor %}
+    <input type="hidden" name="update_names" value="true">
+    <input type="submit" value="Save Names">
+</form>
+
+<form method="post" style="display:inline;">
+    <button type="submit" name="reset" value="true">Reset JSON</button>
+</form>
+
+<form method="post" style="display:inline;">
+    <button type="submit" name="randomize" value="true">Randomize Round 1</button>
+</form>
+
+</body>
+</html>
