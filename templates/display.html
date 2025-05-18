@@ -74,40 +74,12 @@
                 font-size: 1.1rem;
             }
         }
-        .back-button {
-            position: absolute;
-            text-decoration: none;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #000;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-            z-index: 1000;
-            transition: background-color 0.2s ease;
-        }
-        
-        .back-button:hover {
-            background-color: rgba(255, 255, 255, 1);
-        }
-        
-        .back-home {
-            top: 20px;
-            left: 20px;
-        }
-        
-        .back-queue {
-            top: 70px; /* or whatever spacing you want below the first button */
-            left: 20px;
-        }
-
 
     </style>
 </head>
 
 <body>
-    <a href="/" class="back-button back-home">⬅ Back</a>
-    <a href="/queueforviewers" class="back-button back-queue">⚔ Go Queue</a>
+
 
     <div class="tournament">
         {% for round in rounds %}
