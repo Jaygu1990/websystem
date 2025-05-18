@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Queue Table</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: none;
+            background-color: transparent !important;
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            background: black;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 4px solid white;
+            margin-top: 20px;
+        }
+
+        #table-container {
+            width: 90%;
+            margin: 20px auto;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: transparent;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: transparent;
+            border: 4px solid black;
+            border-radius: 10px;
+            box-shadow: 5px 5px 0px black;
+        }
+
+        /* Header styles */
+        thead {
+            background-color: #fdd835; /* Classic Pokémon Yellow */
+            color: black;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0; /* rounded top corners */
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Header cells */
+        thead th {
+            padding: 16px 15px;
+            border: 2px solid black;
+            font-size: 14px;
+        }
+
+        /* Body rows */
+        tbody tr {
+            background-color: transparent;
+            color: white;
+        }
+
+        /* Body cells */
+        tbody td {
+            padding: 16px;
+            text-align: center;
+            border: 2px solid black;
+            font-size: 14px;
+            color: white;
+        }
+
+        .in-progress {
+            font-size: 16px;
+            color: red;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Live Queue</h1>
+    <div id="table-container">
+        <table id="queue-table">
+            <thead>
+                <tr>
+                    <th>Quantity</th>
+                    <th>Product</th>
+                    <th>First Name</th>
+                
+                </tr>
+            </thead>
+            <tbody id="queue-body">
+                {% for item in queue %}
+                <tr style="background-color: transparent;">
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.product_name }}</td>
+                    <td>{{ item.first_name }}</td>
+  
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function fetchQueue() {
+            fetch('/queue_data')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById("queue-body");
+                    tbody.innerHTML = "";
+
+                    data.queue.forEach((item) => {
+                        if (!item.completed) {  // Only show if completed is false
+                            const row = document.createElement("tr");
+                            row.style.backgroundColor = "transparent";
+
+                            row.innerHTML = `
+                                <td>${item.quantity}</td>
+                                <td>${item.product_name}</td>
+                                <td>${item.first_name}</td>
+                          
+                            `;
+                            tbody.appendChild(row);
+                        }
+                    });
+
+                    const container = document.getElementById("table-container");
+                    container.scrollTop = container.scrollHeight;
+                });
+        }
+
+
+        setInterval(fetchQueue, 3000);
+    </script>
+</body>
+</html>

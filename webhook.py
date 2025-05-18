@@ -406,6 +406,7 @@ def home():
                 <button class="button" onclick="window.location.href='/follow'">Go to Followers</button>
                 <button class="button" onclick="window.location.href='/display'">Go to Display</button>
                 <button class="button" onclick="window.location.href='/control'">Go to Control</button>
+                <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
             </div>
         </body>
     </html>
@@ -758,6 +759,9 @@ def display_data():
     })
 
 
+@app.route('/OBSqueue')
+def obs_queue():
+    return render_template('OBSqueue.html', queue=queue)
 
 if __name__ == '__main__':
  
