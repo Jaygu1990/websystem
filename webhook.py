@@ -20,6 +20,9 @@ user_list = []
 user_list_holder = []
 game_queue = []
 followers = set()
+preorder = []
+
+
 # client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
 # pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle', 'meowth', 'snorlax', 'psyduck', 'eevee', 'mew', 'lapras','Caterpie','Grimer']
@@ -89,10 +92,13 @@ def webhook():
             if product_name.lower() != "pokemon game":
                 queue.append(customer_data)
                 game_queue.append(customer_data)
-                if product_name.lower() != "shipping" and product_name != 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet The Glory of Team Rocket Pack sv10 (Japanese) - OPEN LIVE / Battle':
+                if product_name.lower() != "shipping" and product_name != 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet The Glory of Team Rocket Pack sv10 (Japanese) - OPEN LIVE / Battle' and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 1" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 2" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 3" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 4":
                     print_jobs.append(customer_data)
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
+            if product_name == "Pokemon Card TCG S-Chinese Horizons Gemstone Booster Box V2 (Chinese) - PRE ORDER":
+                preorder.append(customer_data)
+                
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
             #     game_queue.append(customer_data)
@@ -105,7 +111,7 @@ def add_order():
     dummy_order = {
         "id": random.randint(1000, 9999),  # Generate a random order ID
         "completed": False,
-        "product_name": "Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle",
+        "product_name": "ABCD",
         "quantity": random.randint(1, 5),  # Random quantity between 1 and 5
         "first_name": "John",
         "last_name": "Doe",
@@ -117,6 +123,7 @@ def add_order():
     queue.append(dummy_order)
     game_queue.append(dummy_order)
     user_list.append(first_name.split()[0])
+    preorder.append(dummy_order)
     
     return jsonify({"message": "Dummy order added", "order": dummy_order})
 
@@ -138,9 +145,14 @@ def queue_data():
     # You can return the full game queue or any data you need from it
     return jsonify({
         "game_queue_count": game_queue_count,  # For the number of customers paid for "draw"
-        "queue": queue  # If you still want to send the `queue` data as well
+        "queue": queue,  # If you still want to send the `queue` data as well
     })
 
+@app.route('/preorder', methods=['GET'])
+def preorderqueue():
+    return jsonify({
+        "preorder":preorder
+    })
 
 
 @app.route('/complete/<int:index>', methods=['POST'])
@@ -167,6 +179,12 @@ def clear_queue():
     queue.clear()
     print_jobs.clear()
     return '', 204  # No content response
+
+@app.route('/clear_preorderqueue', methods=['POST'])
+def preorderclear_queue():
+    preorder.clear()
+    return '', 204  
+
 
 
 @app.route('/select_random_customers', methods=['POST'])

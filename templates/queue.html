@@ -39,10 +39,9 @@
         <button id="clear_list" onclick="clearQueue()">Clear Queue Table</button>
         <button id="battle" onclick="clearBattle()">Clear Battle</button>
         <button id="Energy" onclick="Energy()">Run Energy</button>
+        <button id="Preorder" onclick="clearPreorder()">Clear Pre Order</button>
     </div>
 
-        
-   
     <table id="queue-table">
         <tr>
             <th>Quantity</th>
@@ -130,6 +129,15 @@
           }
           function Energy() {
             fetch('/start-slot-machine', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
+
+          function clearPreorder() {
+            fetch('/clear_preorderqueue', { method: 'POST' })
               .then(response => {
                 if (response.ok) {
                     fetchQueue();  

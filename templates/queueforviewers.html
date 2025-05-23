@@ -14,6 +14,9 @@
                 background-attachment: fixed;
                 text-align: center;
                 color: white;
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
             }
     
             h1 {
@@ -24,6 +27,7 @@
                 border-radius: 8px;
                 display: inline-block;
                 border: 4px solid white;
+                margin-top: 20px;
             }
     
             table {
@@ -34,6 +38,7 @@
                 border: 4px solid black;
                 border-radius: 10px;
                 box-shadow: 5px 5px 0px black;
+                overflow: hidden;
             }
     
             th, td {
@@ -83,7 +88,7 @@
             }
 
             .back-button {
-                position: absolute;
+                position: fixed;
                 text-decoration: none;
                 background-color: rgba(255, 255, 255, 0.8);
                 color: #000;
@@ -93,6 +98,8 @@
                 box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
                 z-index: 1000;
                 transition: background-color 0.2s ease;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 12px;
             }
             
             .back-button:hover {
@@ -105,86 +112,51 @@
             }
             
             .back-battle {
-                top: 70px; /* or whatever spacing you want below the first button */
+                top: 70px;
                 left: 20px;
             }
-            
-            
-
-
         </style>
     </head>
-    <body>
-        <a href="/" class="back-button back-home">⬅ Back</a>
-        <a href="/battle" class="back-button back-battle">⚔ Go Battle</a>
-    
-
-        <h1>Check the link in bio / www.tcgcardsflow.com</h1>
+    <body>   
+        <h1>Pre Order List</h1>
     
         <table id="queue-table">
             <tr>
                 <th>Quantity</th>
                 <th>Product</th>
-                <th>First Name</th>
-                <th>Action</th>
+                <th>Name</th>
             </tr>
-            {% for item in queue %}
+            {% for item in preorder %}
             <tr id="row-{{ loop.index0 }}">
                 <td>{{ item.quantity }}</td>
                 <td>{{ item.product_name }}</td>
                 <td>{{ item.first_name }}</td>
-                <td id="status-{{ loop.index0 }}">
-                    {% if item.completed %}
-                        <span class="done-mark">✔ All Done</span>
-                    {% else %}
-                        <button class="done-btn" onclick="markAsDone({{ loop.index0 }})">
-                            Let's Open the Pack
-                        </button>
-                    {% endif %}
-                </td>
             </tr>
             {% endfor %}
         </table>
     
-    </body>
-    
-</html>
-
     
 
-    <script>
-        function markAsDone(index) {
-            fetch(`/complete/${index}`, { method: 'POST' })
-                .then(response => {
-                    if (response.ok) {
-                        document.getElementById(`status-${index}`).innerHTML = '<span class="done-mark">✔ All Done</span>';
-                    }
-                });
-        }
-
+        <script>
         function fetchQueue() {
-            fetch('/queue_data')
+            fetch('/preorder')
                 .then(response => response.json())
                 .then(data => {
                     let table = document.getElementById("queue-table");
-                    table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>First Name</th><th>Action</th></tr>`; 
-
-                    data.queue.forEach((item, index) => {
+                    table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>Name</th></tr>`;
+                    data.preorder.forEach((item, index) => {
                         let row = document.createElement("tr");
                         row.id = `row-${index}`;
                         row.innerHTML = `
                             <td>${item.quantity}</td>
                             <td>${item.product_name}</td>
-                            <td>${item.first_name}</td>
-                            <td id="status-${index}">
-                                ${item.completed ? '<span class="done-mark">✔ All Done</span>' : `<button class="done-btn" onclick="markAsDone(${index})">Let's Open the Pack</button>`}
-                            </td>
-                        `;
+                            <td>${item.first_name}</td>`;   
                         table.appendChild(row);
                     });
                 });
         }
-        setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
-    </script>
-</body>
+        setInterval(fetchQueue, 3000);
+        </script>
+   
+    </body>
 </html>
