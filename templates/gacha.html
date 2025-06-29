@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokéballs in a Bowl</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #bowl {
+            position: relative;
+            width: 400px;
+            height: 200px;
+            background: rgba(200, 230, 255, 0.5);
+            border-radius: 50%;
+            box-shadow: 
+                inset 0 10px 30px rgba(0, 0, 0, 0.2),
+                0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 5px solid #ddd;
+        }
+        
+        .pokeball {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #ff0000 50%, #ffffff 50%);
+            border: 2px solid #000;
+            box-sizing: border-box;
+        }
+        
+        .pokeball::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #000;
+            transform: translateY(-1px);
+        }
+        
+        .pokeball::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #toggle {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #ff3333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        #toggle:hover {
+            background: #ff5555;
+        }
+    </style>
+</head>
+<body>
+    <button id="toggle">Turn On Pokéballs</button>
+    <div id="bowl"></div>
+
+    <script>
+        const bowl = document.getElementById('bowl');
+        const toggleButton = document.getElementById('toggle');
+        let animationRunning = false;
+        let pokeballs = [];
+        const numPokeballs = 20;
+        
+        // Create pokeballs
+        function createPokeballs() {
+            for (let i = 0; i < numPokeballs; i++) {
+                const pokeball = document.createElement('div');
+                pokeball.className = 'pokeball';
+                
+                // Random initial position within bowl
+                const x = Math.random() * (bowl.clientWidth - 30);
+                const y = Math.random() * (bowl.clientHeight - 30);
+                
+                pokeball.style.left = `${x}px`;
+                pokeball.style.top = `${y}px`;
+                
+                // Random velocity
+                const velocity = {
+                    x: (Math.random() - 0.5) * 4,
+                    y: (Math.random() - 0.5) * 4
+                };
+                
+                bowl.appendChild(pokeball);
+                pokeballs.push({ element: pokeball, x, y, velocity });
+            }
+        }
+        
+        // Animate pokeballs
+        function animate() {
+            if (!animationRunning) return;
+            
+            const bowlWidth = bowl.clientWidth;
+            const bowlHeight = bowl.clientHeight;
+            const pokeballSize = 30;
+            
+            pokeballs.forEach(pokeball => {
+                // Update position
+                pokeball.x += pokeball.velocity.x;
+                pokeball.y += pokeball.velocity.y;
+                
+                // Boundary collision detection
+                if (pokeball.x <= 0 || pokeball.x >= bowlWidth - pokeballSize) {
+                    pokeball.velocity.x *= -1;
+                    pokeball.x = Math.max(0, Math.min(bowlWidth - pokeballSize, pokeball.x));
+                }
+                
+                if (pokeball.y <= 0 || pokeball.y >= bowlHeight - pokeballSize) {
+                    pokeball.velocity.y *= -1;
+                    pokeball.y = Math.max(0, Math.min(bowlHeight - pokeballSize, pokeball.y));
+                }
+                
+                // Apply position
+                pokeball.element.style.left = `${pokeball.x}px`;
+                pokeball.element.style.top = `${pokeball.y}px`;
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Toggle animation
+        toggleButton.addEventListener('click', () => {
+            animationRunning = !animationRunning;
+            toggleButton.textContent = animationRunning ? 'Turn Off Pokéballs' : 'Turn On Pokéballs';
+            
+            if (animationRunning && pokeballs.length === 0) {
+                createPokeballs();
+            }
+            
+            if (animationRunning) {
+                animate();
+            }
+        });
+    </script>
+</body>
+</html>

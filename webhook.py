@@ -425,6 +425,7 @@ def home():
                 <button class="button" onclick="window.location.href='/display'">Go to Display</button>
                 <button class="button" onclick="window.location.href='/control'">Go to Control</button>
                 <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
+                <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
             </div>
         </body>
     </html>
@@ -780,6 +781,19 @@ def display_data():
 @app.route('/OBSqueue')
 def obs_queue():
     return render_template('OBSqueue.html', queue=queue)
+
+@app.route('/gacha', methods=['GET'])
+def gacha():
+    return render_template('gacha.html')
+
+
+@app.route('/flip')
+def flip():
+    return render_template('flip.html')
+
+@app.route('/music')
+def music_player():
+    return render_template('music.html')
 
 if __name__ == '__main__':
  

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Music Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        .player-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .song-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .song-btn {
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .song-btn:hover {
+            background-color: #2980b9;
+        }
+        .song-btn.playing {
+            background-color: #2ecc71;
+        }
+        .status {
+            margin: 15px 0;
+            font-size: 18px;
+            min-height: 25px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container">
+        <h1>音效</h1>
+        
+        <div class="status" id="status">
+            Select a song to play
+        </div>
+        
+        <div class="song-buttons">
+            <button class="song-btn" data-song="1.mp3">心跳</button>
+            <button class="song-btn" data-song="2.mp3">哀伤</button>
+            <button class="song-btn" data-song="3.mp3">紧张-短</button>
+            <button class="song-btn" data-song="4.mp3">紧张-2</button>
+            <button class="song-btn" data-song="5.mp3">紧张-3</button>
+            <button class="song-btn" data-song="6.mp3">紧张-4</button>
+            <button class="song-btn" data-song="7.mp3">生日</button>
+            <button class="song-btn" data-song="8.mp3">川普-1</button>
+            <button class="song-btn" data-song="9.mp3">川普-2</button>
+            <button class="song-btn" data-song="10.mp3">LABUBU</button>
+        </div>
+        
+        <audio id="audio-player"></audio>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const audioPlayer = document.getElementById('audio-player');
+            const statusEl = document.getElementById('status');
+            const songButtons = document.querySelectorAll('.song-btn');
+            let currentlyPlayingBtn = null;
+            
+            // Handle song button clicks
+            songButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const songFile = this.getAttribute('data-song');
+                    
+                    // If this is the currently playing song, stop it
+                    if (currentlyPlayingBtn === this) {
+                        audioPlayer.pause();
+                        audioPlayer.currentTime = 0;
+                        this.classList.remove('playing');
+                        statusEl.textContent = `Stopped: ${this.textContent}`;
+                        currentlyPlayingBtn = null;
+                        return;
+                    }
+                    
+                    // Stop any currently playing song
+                    if (currentlyPlayingBtn) {
+                        audioPlayer.pause();
+                        audioPlayer.currentTime = 0;
+                        currentlyPlayingBtn.classList.remove('playing');
+                    }
+                    
+                    // Play the selected song
+                    audioPlayer.src = `/static/audio/${songFile}`;
+                    audioPlayer.play()
+                        .then(() => {
+                            currentlyPlayingBtn = this;
+                            this.classList.add('playing');
+                            statusEl.textContent = `Playing: ${this.textContent}`;
+                        })
+                        .catch(error => {
+                            console.error("Playback failed:", error);
+                            statusEl.textContent = "Error playing song";
+                        });
+                });
+            });
+            
+            // Update status when song ends
+            audioPlayer.addEventListener('ended', function() {
+                if (currentlyPlayingBtn) {
+                    currentlyPlayingBtn.classList.remove('playing');
+                    statusEl.textContent = `Finished: ${currentlyPlayingBtn.textContent}`;
+                    currentlyPlayingBtn = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
