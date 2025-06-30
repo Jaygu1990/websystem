@@ -426,7 +426,7 @@ def home():
                 <button class="button" onclick="window.location.href='/control'">Go to Control</button>
                 <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
                 <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
-                <button class="button" onclick="window.location.href='/flip'">Go to Flip</button>
+                <button class="button" onclick="window.location.href='/flipgame'">Go to Flip</button>
             </div>
         </body>
     </html>
@@ -794,57 +794,54 @@ def music_player():
     return render_template('music.html')
 
 
-
-FLIP_STATE_FILE = 'game_state.json'
+flip_state = {
+    'numbers': [i+1 for i in range(27)],  # Fixed order 1-27
+    'images': [],                         # Will be initialized when needed
+    'flipped': [False]*27                 # All start face down
+}
 
 def initialize_state():
-    # Create and shuffle image assignments
+    """Initialize the game state with shuffled images"""
     image_indices = list(range(27))
     shuffle(image_indices)
     
-    return {
-        'numbers': [i+1 for i in range(27)],  # Fixed order 1-27
-        'images': image_indices,  # Shuffled image assignments
-        'flipped': [False]*27  # All start face down
-    }
+    flip_state['images'] = image_indices
+    flip_state['flipped'] = [False]*27
+    return flip_state
 
-def load_state():
-    if os.path.exists(FLIP_STATE_FILE):
-        try:
-            with open(FLIP_STATE_FILE, 'r') as f:
-                return json.load(f)
-        except:
-            pass
-    return initialize_state()
+def flip_load_state():
+    """Load current state, initializing if needed"""
+    if not flip_state['images']:
+        initialize_state()
+    return flip_state
 
-def save_state(state):
-    with open(FLIP_STATE_FILE, 'w') as f:
-        json.dump(state, f)
-
-@app.route('/flip')
-def game():
+@app.route('/flipgame')
+def flip_game():
+    """Serve the game page"""
     return render_template('flip.html')
 
 @app.route('/get-state')
-def get_state():
-    return jsonify(load_state())
+def flip_get_state():
+    """Get current game state"""
+    return jsonify(flip_load_state())
 
 @app.route('/reset', methods=['POST'])
-def reset():
-    state = initialize_state()
-    save_state(state)
-    return jsonify(state)
+def flip_reset():
+    """Reset the game state"""
+    return jsonify(initialize_state())
 
 @app.route('/flip-card', methods=['POST'])
 def flip_card():
-    data = request.json
-    card_index = data['index']
+    """Handle card flip action"""
+    card_index = request.json.get('index')
     
-    state = load_state()
+    if card_index is None or not 0 <= card_index < 27:
+        return jsonify({'success': False, 'error': 'Invalid card index'}), 400
+    
+    state = flip_load_state()
     state['flipped'][card_index] = not state['flipped'][card_index]
-    save_state(state)
     
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'state': state})
 
 
 if __name__ == '__main__':
