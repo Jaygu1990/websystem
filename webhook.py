@@ -1,7 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 from flask import Flask 
-from flask import request, jsonify, render_template,redirect, url_for
+from flask import request, jsonify, render_template,redirect, url_for,send_from_directory
 import random
 from flask_socketio import SocketIO, emit
 import logging
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
 import time
 import threading
 from threading import Thread
-
+from random import shuffle
 
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
@@ -426,6 +426,7 @@ def home():
                 <button class="button" onclick="window.location.href='/control'">Go to Control</button>
                 <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
                 <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
+                <button class="button" onclick="window.location.href='/flip'">Go to Flip</button>
             </div>
         </body>
     </html>
@@ -787,13 +788,64 @@ def gacha():
     return render_template('gacha.html')
 
 
-@app.route('/flip')
-def flip():
-    return render_template('flip.html')
 
 @app.route('/music')
 def music_player():
     return render_template('music.html')
+
+
+
+FLIP_STATE_FILE = 'game_state.json'
+
+def initialize_state():
+    # Create and shuffle image assignments
+    image_indices = list(range(27))
+    shuffle(image_indices)
+    
+    return {
+        'numbers': [i+1 for i in range(27)],  # Fixed order 1-27
+        'images': image_indices,  # Shuffled image assignments
+        'flipped': [False]*27  # All start face down
+    }
+
+def load_state():
+    if os.path.exists(FLIP_STATE_FILE):
+        try:
+            with open(FLIP_STATE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return initialize_state()
+
+def save_state(state):
+    with open(FLIP_STATE_FILE, 'w') as f:
+        json.dump(state, f)
+
+@app.route('/flip')
+def game():
+    return render_template('flip.html')
+
+@app.route('/get-state')
+def get_state():
+    return jsonify(load_state())
+
+@app.route('/reset', methods=['POST'])
+def reset():
+    state = initialize_state()
+    save_state(state)
+    return jsonify(state)
+
+@app.route('/flip-card', methods=['POST'])
+def flip_card():
+    data = request.json
+    card_index = data['index']
+    
+    state = load_state()
+    state['flipped'][card_index] = not state['flipped'][card_index]
+    save_state(state)
+    
+    return jsonify({'success': True})
+
 
 if __name__ == '__main__':
  
