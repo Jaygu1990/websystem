@@ -207,6 +207,43 @@
         .long-flip {
             animation-duration: 14s !important;
         }
+
+@keyframes lightSweep {
+    0% {
+        background-position: -100% -100%;
+    }
+    100% {
+        background-position: 200% 200%;
+    }
+}
+
+.card-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.card-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.7) 50%,
+        rgba(255,255,255,0) 100%
+    );
+    background-size: 200% 200%;
+    animation: lightSweep 1s ease-out;
+    opacity: 0;
+}
+
+.card-shine-active::after {
+    opacity: 1;
+}
+
     </style>
 </head>
 <body>
@@ -233,7 +270,7 @@
 
     <!-- Sound effects -->
     <audio id="flipSound" preload="auto">
-        <source src="/static/sounds/heart.mp3" type="audio/mpeg">
+        <source src="/static/sounds/curious.mp3" type="audio/mpeg">
     </audio>
     <audio id="hitSound" preload="auto">
         <source src="/static/sounds/hit.mp3" type="audio/mpeg">
@@ -249,6 +286,55 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+
+
+
+            function shineRandomUnflippedCards() {
+                // Get all unflipped cards
+                const unflippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
+                
+                if (unflippedCards.length === 0) return;
+                
+                // Randomly select 1-3 cards to shine
+                const cardsToShine = [];
+                const count = Math.min(3, Math.max(1, Math.floor(Math.random() * unflippedCards.length)));
+                
+                while (cardsToShine.length < count) {
+                    const randomIndex = Math.floor(Math.random() * unflippedCards.length);
+                    const card = unflippedCards[randomIndex];
+                    if (!cardsToShine.includes(card)) {
+                        cardsToShine.push(card);
+                    }
+                }
+                
+                // Add shine effect to selected cards
+                cardsToShine.forEach(card => {
+                    const front = card.querySelector('.front');
+                    front.classList.add('card-shine', 'card-shine-active');
+                    
+                    // Remove shine after animation completes
+                    setTimeout(() => {
+                        front.classList.remove('card-shine-active');
+                        setTimeout(() => {
+                            front.classList.remove('card-shine');
+                        }, 1000);
+                    }, 1000);
+                });
+            }
+
+
+            setInterval(shineRandomUnflippedCards, 7000);
+            setTimeout(shineRandomUnflippedCards, 2000);
+            preloadImages();
+            loadGame();
+
+
+
+
+
+
+
+
             // Game elements
             const cardGrid = document.getElementById('cardGrid');
             const resetBtn = document.getElementById('resetBtn');
@@ -272,7 +358,7 @@
             let currentFullscreenCard = null;
             
             // Set volumes
-            flipSound.volume = 0.6;
+            flipSound.volume = 0.8;
             hitSound.volume = 0.8;
             track1.volume = 0.1;
             track2.volume = 0.1;
@@ -307,7 +393,7 @@
                 for (let i = 1; i <= 27; i++) {
                     new Image().src = `/static/images/card${i}.png`;
                 }
-                new Image().src = '/static/images/question.png';
+                new Image().src = '/static/images/question.gif';
                 new Image().src = '/static/images/hit.gif';
             }
             
@@ -340,7 +426,7 @@
                             <div class="card-face back">
                                 <img src="${gameState.flipped[index] ? 
                                     `/static/images/card${gameState.images[index] + 1}.png` : 
-                                    '/static/images/question.png'}" 
+                                    '/static/images/question.gif'}" 
                                      alt="Card ${number}">
                             </div>
                         </div>
@@ -360,14 +446,14 @@
                     const inner = card.querySelector('.card-inner');
                     const cardNumber = gameState.images[index] + 1;
                     const isSpecialCard = cardNumber === 26 || cardNumber === 27;
-                    const flipDuration = isSpecialCard ? 14000 : 4000;
+                    const flipDuration = isSpecialCard ? 14500 : 6400;
                     const soundToPlay = isSpecialCard ? hitSound : flipSound;
                     
                     // Clear any previous sound timeout
                     clearTimeout(soundTimeout);
                     
                     // Show question mark or hit.gif in fullscreen based on card type
-                    fullscreenImage.src = isSpecialCard ? '/static/images/hit.gif' : '/static/images/question.png';
+                    fullscreenImage.src = isSpecialCard ? '/static/images/hit.gif' : '/static/images/question.gif';
                     fullscreenOverlay.classList.add('active');
                     currentFullscreenCard = cardNumber;
                     
