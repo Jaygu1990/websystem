@@ -795,18 +795,18 @@ def music_player():
 
 
 flip_state = {
-    'numbers': [i+1 for i in range(27)],  # Fixed order 1-27
+    'numbers': [i+1 for i in range(30)],  # Fixed order 1-30
     'images': [],                         # Will be initialized when needed
-    'flipped': [False]*27                 # All start face down
+    'flipped': [False]*30                 # All start face down
 }
 
 def initialize_state():
     """Initialize the game state with shuffled images"""
-    image_indices = list(range(27))
+    image_indices = list(range(30))  # Changed to 30
     shuffle(image_indices)
     
     flip_state['images'] = image_indices
-    flip_state['flipped'] = [False]*27
+    flip_state['flipped'] = [False]*30  # Changed to 30
     return flip_state
 
 def flip_load_state():
@@ -835,13 +835,14 @@ def flip_card():
     """Handle card flip action"""
     card_index = request.json.get('index')
     
-    if card_index is None or not 0 <= card_index < 27:
+    # Changed the validation to check for 30 cards instead of 27
+    if card_index is None or not 0 <= card_index < 30:
         return jsonify({'success': False, 'error': 'Invalid card index'}), 400
     
     state = flip_load_state()
     state['flipped'][card_index] = not state['flipped'][card_index]
     
-    return jsonify({'success': True, 'state': state})
+    return jsonify({'success': True, 'state': state})  # Fixed the return statement
 
 
 if __name__ == '__main__':

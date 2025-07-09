@@ -51,7 +51,7 @@
         
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(9, 1fr);
+            grid-template-columns: repeat(10, 1fr);
             grid-template-rows: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 25px;
@@ -390,11 +390,14 @@
             });
             
             function preloadImages() {
-                for (let i = 1; i <= 27; i++) {
+                for (let i = 1; i <= 30; i++) {
                     new Image().src = `/static/images/card${i}.png`;
                 }
                 new Image().src = '/static/images/question.gif';
-                new Image().src = '/static/images/hit.gif';
+                const hitGifs = ['hit.gif', 'hit2.gif', 'hit3.gif', 'hit4.gif', 'hit5.gif'];
+                hitGifs.forEach(filename => {
+                    new Image().src = `/static/images/${filename}`;
+                })
             }
             
             async function loadGame() {
@@ -404,9 +407,9 @@
                     renderCards();
                 } catch (error) {
                     gameState = {
-                        numbers: Array.from({length: 27}, (_, i) => i + 1),
-                        images: Array.from({length: 27}, (_, i) => i).sort(() => Math.random() - 0.5),
-                        flipped: Array(27).fill(false)
+                        numbers: Array.from({length: 30}, (_, i) => i + 1),
+                        images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
+                        flipped: Array(30).fill(false)
                     };
                     renderCards();
                 }
@@ -425,7 +428,7 @@
                             <div class="card-face front">${number}</div>
                             <div class="card-face back">
                                 <img src="${gameState.flipped[index] ? 
-                                    `/static/images/card${gameState.images[index] + 1}.png` : 
+                                    `/static/images/card${gameState.images[index] + 1}.png?v=${Date.now()}` : 
                                     '/static/images/question.gif'}" 
                                      alt="Card ${number}">
                             </div>
@@ -452,11 +455,17 @@
                     // Clear any previous sound timeout
                     clearTimeout(soundTimeout);
                     
-                    // Show question mark or hit.gif in fullscreen based on card type
-                    fullscreenImage.src = isSpecialCard ? '/static/images/hit.gif' : '/static/images/question.gif';
+                    // Show question mark or hit.gif in fullscreen based on card type                    
+                    const hitOptions = ['hit.gif', 'hit2.gif', 'hit3.gif', 'hit4.gif', 'hit5.gif'];
+                    const randomHit = hitOptions[Math.floor(Math.random() * hitOptions.length)];
+
+                    fullscreenImage.src = isSpecialCard
+                        ? `/static/images/${randomHit}`
+                        : '/static/images/question.gif';
                     fullscreenOverlay.classList.add('active');
                     currentFullscreenCard = cardNumber;
-                    
+
+
                     // First flip to question mark
                     card.classList.add('flipping');
                     if (isSpecialCard) {
@@ -487,7 +496,7 @@
                     await new Promise(resolve => setTimeout(resolve, flipDuration - 500));
                     
                     // Update fullscreen with final image
-                    fullscreenImage.src = `/static/images/card${cardNumber}.png`;
+                    fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
                     
                     // Flip to actual image in grid
                     card.classList.add('flipped', 'unflipping');
@@ -523,9 +532,9 @@
                 } catch (error) {
                     console.error("Error resetting game:", error);
                     gameState = {
-                        numbers: Array.from({length: 27}, (_, i) => i + 1),
-                        images: Array.from({length: 27}, (_, i) => i).sort(() => Math.random() - 0.5),
-                        flipped: Array(27).fill(false)
+                        numbers: Array.from({length: 30}, (_, i) => i + 1),
+                        images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
+                        flipped: Array(30).fill(false)
                     };
                     renderCards();
                 }
