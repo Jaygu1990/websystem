@@ -418,6 +418,31 @@
             const track1 = document.getElementById('track1');
             const track2 = document.getElementById('track2');
             
+
+            // Music control event listeners
+            playTrack1Btn.addEventListener('click', () => {
+                track2.pause();
+                track1.currentTime = 0;
+                track1.play().catch(console.error);
+            });
+
+            stopTrack1Btn.addEventListener('click', () => {
+                track1.pause();
+                track1.currentTime = 0;
+            });
+
+            playTrack2Btn.addEventListener('click', () => {
+                track1.pause();
+                track2.currentTime = 0;
+                track2.play().catch(console.error);
+            });
+
+            stopTrack2Btn.addEventListener('click', () => {
+                track2.pause();
+                track2.currentTime = 0;
+            });
+
+
             // Game state
             let gameState = {};
             let isFlipping = false;
