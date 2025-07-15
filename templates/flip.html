@@ -455,8 +455,8 @@
             
             // NEW: Trainer timing system (1-5 minutes random, shows for 2 seconds)
             function scheduleTrainer() {
-                const minInterval = 60000; // 1 minute
-                const maxInterval = 300000; // 5 minutes
+                、const minInterval = 10000; // 1 minute
+                const maxInterval = 10000; // 5 minutes
                 const showDuration = 4000; // 2 seconds
                 
                 const randomInterval = Math.floor(
@@ -553,12 +553,12 @@
                 trainerSound.currentTime = 0;
                 trainerSound.play().catch(console.error);
                 
-                // Hide after 2 seconds
+                // Hide after 4 seconds
                 setTimeout(() => {
                     trainerOverlay.classList.remove('active');
                     gameboyWindow.classList.remove('active');
                     isTrainerShowing = false;
-                }, 2000);
+                }, 4000);
             }
             
             // NEW: Helper to get unflipped numbers
