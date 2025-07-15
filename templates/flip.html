@@ -247,7 +247,7 @@
     </style>
 </head>
 <body>
-    <h1>No Gambling</h1>
+    <h1>25 CAD per game</h1>
 
     <div class="music-controls">
         <button class="music-btn" id="playTrack1">Play Music 1</button>
@@ -394,7 +394,7 @@
                     new Image().src = `/static/images/card${i}.png`;
                 }
                 new Image().src = '/static/images/question.gif';
-                const hitGifs = ['hit.gif', 'hit2.gif', 'hit3.gif', 'hit4.gif', 'hit5.gif'];
+                const hitGifs = ['hit.gif'];
                 hitGifs.forEach(filename => {
                     new Image().src = `/static/images/${filename}`;
                 })
@@ -448,7 +448,7 @@
                     const card = cardGrid.children[index];
                     const inner = card.querySelector('.card-inner');
                     const cardNumber = gameState.images[index] + 1;
-                    const isSpecialCard = cardNumber === 26 || cardNumber === 27;
+                    const isSpecialCard = cardNumber === 27 || cardNumber === 28;
                     const flipDuration = isSpecialCard ? 14500 : 6400;
                     const soundToPlay = isSpecialCard ? hitSound : flipSound;
                     
@@ -456,7 +456,7 @@
                     clearTimeout(soundTimeout);
                     
                     // Show question mark or hit.gif in fullscreen based on card type                    
-                    const hitOptions = ['hit.gif', 'hit2.gif', 'hit3.gif', 'hit4.gif', 'hit5.gif'];
+                    const hitOptions = ['hit.gif'];
                     const randomHit = hitOptions[Math.floor(Math.random() * hitOptions.length)];
 
                     fullscreenImage.src = isSpecialCard
