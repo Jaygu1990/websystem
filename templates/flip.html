@@ -30,13 +30,24 @@
         }
         
         h1 {
-            color: #ff0000; /* Changed to red */
+            color: #ff0000;
             margin: 0 0 40px 0;
             font-size: 3rem;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 3px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 1;
+            background-color: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid gold;
         }
         
         .game-container {
@@ -47,6 +58,8 @@
             padding: 30px;
             box-shadow: var(--shadow);
             margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
         }
         
         .card-grid {
@@ -143,6 +156,8 @@
             display: flex;
             gap: 15px;
             margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
         }
 
         .music-btn {
@@ -208,46 +223,136 @@
             animation-duration: 14s !important;
         }
 
-@keyframes lightSweep {
-    0% {
-        background-position: -100% -100%;
-    }
-    100% {
-        background-position: 200% 200%;
-    }
-}
+        @keyframes lightSweep {
+            0% {
+                background-position: -100% -100%;
+            }
+            100% {
+                background-position: 200% 200%;
+            }
+        }
 
-.card-shine {
-    position: relative;
-    overflow: hidden;
-}
+        .card-shine {
+            position: relative;
+            overflow: hidden;
+        }
 
-.card-shine::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-        135deg,
-        rgba(255,255,255,0) 0%,
-        rgba(255,255,255,0.7) 50%,
-        rgba(255,255,255,0) 100%
-    );
-    background-size: 200% 200%;
-    animation: lightSweep 1s ease-out;
-    opacity: 0;
-}
+        .card-shine::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.7) 50%,
+                rgba(255,255,255,0) 100%
+            );
+            background-size: 200% 200%;
+            animation: lightSweep 1s ease-out;
+            opacity: 0;
+        }
 
-.card-shine-active::after {
-    opacity: 1;
-}
+        .card-shine-active::after {
+            opacity: 1;
+        }
 
+        /* Trainer styles */
+        .trainer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .trainer-overlay.active {
+            opacity: 1;
+        }
+
+        .trainer-image {
+            max-width: 60%;
+            max-height: 60%;
+            animation: trainerAppear 0.5s ease-out;
+        }
+
+        @keyframes trainerAppear {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes trainerDisappear {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        /* Game Boy conversation window - TOP POSITION */
+        .gameboy-window {
+            position: fixed;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            background: #e0f8d0;
+            border: 8px solid #3a5f0b;
+            border-radius: 15px;
+            padding: 25px;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #000;
+            box-shadow: 0 0 0 4px #8bac0f, 0 0 0 8px #306230;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            line-height: 1.4;
+            text-transform: uppercase;
+        }
+
+        .gameboy-window.active {
+            opacity: 1;
+        }
+
+        .gameboy-window::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 2px solid #8bac0f;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .gameboy-text {
+            margin: 0;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>25 CAD per game</h1>
+    <!-- NEW: Trainer overlay and conversation window -->
+    <div class="trainer-overlay" id="trainerOverlay">
+        <img class="trainer-image" id="trainerImage" src="" alt="Trainer">
+    </div>
+    <div class="gameboy-window" id="gameboyWindow">
+        <p class="gameboy-text" id="gameboyText"></p>
+    </div>
+
+    <h1 id="gameTitle">NO GAMBLING</h1>
 
     <div class="music-controls">
         <button class="music-btn" id="playTrack1">Play Music 1</button>
@@ -275,6 +380,10 @@
     <audio id="hitSound" preload="auto">
         <source src="/static/sounds/hit.mp3" type="audio/mpeg">
     </audio>
+    <!-- NEW: Trainer sound -->
+    <audio id="trainerSound" preload="auto">
+        <source src="/static/sounds/trainer.mp3" type="audio/mpeg">
+    </audio>
 
     <!-- Background music tracks -->
     <audio id="track1" loop preload="auto">
@@ -286,55 +395,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-
-
-
-            function shineRandomUnflippedCards() {
-                // Get all unflipped cards
-                const unflippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
-                
-                if (unflippedCards.length === 0) return;
-                
-                // Randomly select 1-3 cards to shine
-                const cardsToShine = [];
-                const count = Math.min(3, Math.max(1, Math.floor(Math.random() * unflippedCards.length)));
-                
-                while (cardsToShine.length < count) {
-                    const randomIndex = Math.floor(Math.random() * unflippedCards.length);
-                    const card = unflippedCards[randomIndex];
-                    if (!cardsToShine.includes(card)) {
-                        cardsToShine.push(card);
-                    }
-                }
-                
-                // Add shine effect to selected cards
-                cardsToShine.forEach(card => {
-                    const front = card.querySelector('.front');
-                    front.classList.add('card-shine', 'card-shine-active');
-                    
-                    // Remove shine after animation completes
-                    setTimeout(() => {
-                        front.classList.remove('card-shine-active');
-                        setTimeout(() => {
-                            front.classList.remove('card-shine');
-                        }, 1000);
-                    }, 1000);
-                });
-            }
-
-
-            setInterval(shineRandomUnflippedCards, 7000);
-            setTimeout(shineRandomUnflippedCards, 2000);
-            preloadImages();
-            loadGame();
-
-
-
-
-
-
-
-
             // Game elements
             const cardGrid = document.getElementById('cardGrid');
             const resetBtn = document.getElementById('resetBtn');
@@ -342,6 +402,13 @@
             const hitSound = document.getElementById('hitSound');
             const fullscreenOverlay = document.getElementById('fullscreenOverlay');
             const fullscreenImage = document.getElementById('fullscreenImage');
+            
+            // NEW: Trainer elements
+            const trainerOverlay = document.getElementById('trainerOverlay');
+            const trainerImage = document.getElementById('trainerImage');
+            const trainerSound = document.getElementById('trainerSound');
+            const gameboyWindow = document.getElementById('gameboyWindow');
+            const gameboyText = document.getElementById('gameboyText');
             
             // Music controls
             const playTrack1Btn = document.getElementById('playTrack1');
@@ -357,61 +424,212 @@
             let soundTimeout;
             let currentFullscreenCard = null;
             
+            // NEW: Trainer state
+            let isTrainerShowing = false;
+            
             // Set volumes
             flipSound.volume = 0.8;
             hitSound.volume = 0.8;
             track1.volume = 0.1;
             track2.volume = 0.1;
+            trainerSound.volume = 0.5; // NEW: Trainer sound volume
             
-            // Music control functions
-            playTrack1Btn.addEventListener('click', () => {
-                track2.pause();
-                track1.currentTime = 0;
-                track1.play().catch(e => console.log("Music play error:", e));
-            });
+            // NEW: Persistent state functions
+            function loadGameState() {
+                const savedState = localStorage.getItem('cardFlipGameState');
+                if (savedState) {
+                    try {
+                        gameState = JSON.parse(savedState);
+                    renderCards();
+                    return true;
+                    } catch (e) {
+                    console.error("Failed to load game state:", e);
+                }
+                }
+                return false;
+            }
             
-            stopTrack1Btn.addEventListener('click', () => {
-                track1.pause();
-            });
+            function saveGameState() {
+                localStorage.setItem('cardFlipGameState', JSON.stringify(gameState));
+            }
             
-            playTrack2Btn.addEventListener('click', () => {
-                track1.pause();
-                track2.currentTime = 0;
-                track2.play().catch(e => console.log("Music play error:", e));
-            });
+            // NEW: Trainer timing system (1-5 minutes random, shows for 2 seconds)
+            function scheduleTrainer() {
+                const minInterval = 600000; // 1 minute
+                const maxInterval = 3000000; // 5 minutes
+                const showDuration = 4000; // 2 seconds
+                
+                const randomInterval = Math.floor(
+                    Math.random() * (maxInterval - minInterval + 1) + minInterval
+                );
+                
+                setTimeout(() => {
+                    if (!isTrainerShowing) {
+                        showTrainer();
+                    }
+                    scheduleTrainer(); // Schedule next appearance
+                }, randomInterval);
+            }
             
-            stopTrack2Btn.addEventListener('click', () => {
-                track2.pause();
-            });
+            // NEW: Trainer display function
+            function showTrainer() {
+                const unflippedNumbers = getUnflippedNumbers();
+                if (unflippedNumbers.length === 0 || isTrainerShowing) return;
+                
+                isTrainerShowing = true;
+                
+                // Random trainer (1-10)
+                const trainerNum = Math.floor(Math.random() * 10) + 1;
+                trainerImage.src = `/static/images/trainer${trainerNum}.gif`;
+                
+                // Random unflipped card suggestion
+                const randomNumber = unflippedNumbers[Math.floor(Math.random() * unflippedNumbers.length)];
+            const messages = [
+                // Professor Oak Style (10 analytical/research-based)
+                `MY POKéDEX DATA SUGGESTS CARD ${randomNumber} IS A STRONG HIT CANDIDATE!`,
+                `RESEARCH SHOWS ${randomNumber} HAS 87% HIT POTENTIAL!`,
+                `ACCORDING TO MY STUDIES, ${randomNumber} IS DUE FOR A HIT!`,
+                `STATISTICALLY, ${randomNumber} MATCHES RECENT HIT PATTERNS!`,
+                `MY POKéMON BATTLE ALGORITHM PREDICTS ${randomNumber} WILL HIT!`,
+                `HMM... ${randomNumber} SHOWS PROMISING HIT CHARACTERISTICS!`,
+                `LAB RESULTS INDICATE ${randomNumber} HAS HIGH HIT ENERGY!`,
+                `THE TYPE ADVANTAGE FAVORS CARD ${randomNumber} FOR A HIT!`,
+                `MY POKéMON BREEDING EXPERIENCE SUGGESTS ${randomNumber}!`,
+                `EVOLUTIONARY PATTERNS POINT TO ${randomNumber} AS NEXT HIT!`,
+
+                // Psychic Trainer Style (10 mystical/intuitive)
+                `MY KADABRA'S SPOON BENDS TOWARD ${randomNumber}... IT WILL HIT!`,
+                `I FORESEE CARD ${randomNumber} SHINING WITH HIT ENERGY!`,
+                `MY ESPER POWERS DETECT A HIT COMING FROM ${randomNumber}!`,
+                `THE UNOWN LETTERS FORM ${randomNumber}... IT'S A HIT!`,
+                `MY PSYDUCK'S HEADACHE MEANS ${randomNumber} WILL HIT!`,
+                `THE FUTURE SIGHT ATTACK REVEALS ${randomNumber} AS NEXT HIT!`,
+                `MY DARKRAI'S NIGHTMARE SHOWED ${randomNumber} HITTING!`,
+                `CELEBI'S TIME TRAVEL SHOWS ${randomNumber} AS A PAST HIT!`,
+                `MY GENGAR'S SHADOW POINTS TO ${randomNumber} FOR A HIT!`,
+                `THE LAKE TRIO WHISPERS ${randomNumber} IS THE CHOSEN HIT!`,
+
+                // Young Trainer Style (10 energetic/enthusiastic)
+                `WOAH! ${randomNumber} IS TOTALLY GONNA HIT! TRY IT!`,
+                `PIKACHU'S CHEEKS SPARKED AT ${randomNumber} - IT'S A HIT!`,
+                `YAY! ${randomNumber} LOOKS SUPER LUCKY RIGHT NOW!`,
+                `MY POKéMON ARE JUMPING FOR ${randomNumber} TO HIT!`,
+                `COOL! ${randomNumber} HAS THAT WINNING HIT VIBE!`,
+                `AWESOME! MY POKéMON SENSE ${randomNumber} WILL HIT!`,
+                `RADICAL! ${randomNumber} IS PRIMED FOR A BIG HIT!`,
+                `EPIC! ${randomNumber} HAS THAT CHAMPION HIT ENERGY!`,
+                `MY STARTER POKéMON LOVES ${randomNumber} FOR A HIT!`,
+                `WOWZERS! ${randomNumber} IS LOADED WITH HIT POWER!`,
+
+                // Gym Leader Style (10 strategic/authoritative)
+                `AS A GYM LEADER, I RECOMMEND ${randomNumber} FOR YOUR NEXT HIT!`,
+                `TRAINER, ${randomNumber} IS YOUR BEST STRATEGIC HIT CHOICE!`,
+                `MY BADGE CASE VIBRATES WHEN I SEE ${randomNumber} - POTENTIAL HIT!`,
+                `AFTER 100 BATTLES, I KNOW ${randomNumber} CAN HIT!`,
+                `MY TM CASE SHOWS ${randomNumber} HAS HIT MOVES!`,
+                `A CHAMPION'S INSTINCT SAYS ${randomNumber} WILL HIT!`,
+                `MY TYPE SPECIALIZATION SUGGESTS ${randomNumber} FOR A HIT!`,
+                `TRAINER PROTOCOL: CONSIDER ${randomNumber} FOR MAXIMUM HIT!`,
+                `ELITE TRAINER ANALYSIS: ${randomNumber} IS HIT-READY!`,
+                `GYM CHALLENGE DATA POINTS TO ${randomNumber} AS NEXT HIT!`,
+
+                // Team Rocket Style (10 sneaky/tricky)
+                `TEAM ROCKET'S SECRET INTEL SAYS ${randomNumber} WILL HIT! *hehe*`,
+                `PREPARE FOR HITNESS! ${randomNumber} IS TODAY'S TROUBLE!`,
+                `MEOWTH'S PAY DAY LANDED ON ${randomNumber} - IT'S A HIT!`,
+                `OUR DARK POKéMON SENSE ${randomNumber} IS RIPE FOR HITTING!`,
+                `TO PROTECT THE HIT FROM DEVASATION... CHOOSE ${randomNumber}!`,
+                `JESSIE'S HAIRSTYLE TODAY FORMS THE NUMBER ${randomNumber}!`,
+                `JAMES' VICTREEBEL POINTS TO ${randomNumber} FOR A HIT!`,
+                `WOBUFFET'S SHADOW REVEALS ${randomNumber} AS NEXT HIT!`,
+                `OUR EVIL PLOT REQUIRES YOU TO PICK ${randomNumber} TO HIT!`,
+                `GIOVANNI'S MASTER PLAN INVOLVES ${randomNumber} HITTING!`
+            ];
+                gameboyText.textContent = messages[Math.floor(Math.random() * messages.length)];
+                
+                // Show elements
+                trainerOverlay.classList.add('active');
+                gameboyWindow.classList.add('active');
+                trainerSound.currentTime = 0;
+                trainerSound.play().catch(console.error);
+                
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    trainerOverlay.classList.remove('active');
+                    gameboyWindow.classList.remove('active');
+                    isTrainerShowing = false;
+                }, 2000);
+            }
             
-            // Close overlay when clicked
-            fullscreenOverlay.addEventListener('click', () => {
-                fullscreenOverlay.classList.remove('active');
-            });
-            
+            // NEW: Helper to get unflipped numbers
+            function getUnflippedNumbers() {
+                if (!gameState.flipped || !gameState.numbers) return [];
+                const unflipped = [];
+                gameState.flipped.forEach((isFlipped, index) => {
+                    if (!isFlipped) {
+                        unflipped.push(gameState.numbers[index]);
+                    }
+                });
+                return unflipped;
+            }
+
+            function shineRandomUnflippedCards() {
+                const unflippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
+                if (unflippedCards.length === 0) return;
+                
+                const cardsToShine = [];
+                const count = Math.min(3, Math.max(1, Math.floor(Math.random() * unflippedCards.length)));
+                
+                while (cardsToShine.length < count) {
+                    const randomIndex = Math.floor(Math.random() * unflippedCards.length);
+                    const card = unflippedCards[randomIndex];
+                    if (!cardsToShine.includes(card)) {
+                        cardsToShine.push(card);
+                    }
+                }
+                
+                cardsToShine.forEach(card => {
+                    const front = card.querySelector('.front');
+                    front.classList.add('card-shine', 'card-shine-active');
+                    
+                    setTimeout(() => {
+                        front.classList.remove('card-shine-active');
+                        setTimeout(() => {
+                            front.classList.remove('card-shine');
+                        }, 1000);
+                    }, 1000);
+                });
+            }
+
+            // Original game functions (unchanged except for state persistence)
             function preloadImages() {
                 for (let i = 1; i <= 30; i++) {
                     new Image().src = `/static/images/card${i}.png`;
                 }
                 new Image().src = '/static/images/question.gif';
-                const hitGifs = ['hit.gif'];
-                hitGifs.forEach(filename => {
-                    new Image().src = `/static/images/${filename}`;
-                })
+                new Image().src = '/static/images/hit.gif';
+                // Preload trainer images (1-10)
+                for (let i = 1; i <= 10; i++) {
+                    new Image().src = `/static/images/trainer${i}.gif`;
+                }
             }
             
             async function loadGame() {
-                try {
-                    const response = await fetch('/get-state');
-                    gameState = await response.json();
-                    renderCards();
-                } catch (error) {
-                    gameState = {
-                        numbers: Array.from({length: 30}, (_, i) => i + 1),
-                        images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
-                        flipped: Array(30).fill(false)
-                    };
-                    renderCards();
+                // Try localStorage first
+                if (!loadGameState()) {
+                    // Fallback to original fetch
+                    try {
+                        const response = await fetch('/get-state');
+                        gameState = await response.json();
+                        renderCards();
+                    } catch (error) {
+                        gameState = {
+                            numbers: Array.from({length: 30}, (_, i) => i + 1),
+                            images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
+                            flipped: Array(30).fill(false)
+                        };
+                        renderCards();
+                    }
                 }
             }
             
@@ -462,9 +680,16 @@
                     fullscreenImage.src = isSpecialCard
                         ? `/static/images/${randomHit}`
                         : '/static/images/question.gif';
+                    
+                    // Add active class to overlay and set up click handler
                     fullscreenOverlay.classList.add('active');
+                    const closeOverlay = () => {
+                        fullscreenOverlay.classList.remove('active');
+                        fullscreenOverlay.removeEventListener('click', closeOverlay);
+                    };
+                    fullscreenOverlay.addEventListener('click', closeOverlay);
+                    
                     currentFullscreenCard = cardNumber;
-
 
                     // First flip to question mark
                     card.classList.add('flipping');
@@ -498,8 +723,17 @@
                     // Update fullscreen with final image
                     fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
                     
+                    // Set timeout to auto-close overlay after 3 seconds (adjust as needed)
+                    const overlayTimeout = setTimeout(() => {
+                        fullscreenOverlay.classList.remove('active');
+                        fullscreenOverlay.removeEventListener('click', closeOverlay);
+                    }, 3000);
+                    
                     // Flip to actual image in grid
                     card.classList.add('flipped', 'unflipping');
+                    gameState.flipped[index] = true;
+                    saveGameState();
+                    
                     await fetch('/flip-card', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -509,6 +743,7 @@
                     await new Promise(resolve => {
                         setTimeout(() => {
                             card.classList.remove('unflipping');
+                            clearTimeout(overlayTimeout); // Clear the auto-close timeout
                             resolve();
                         }, 500);
                     });
@@ -527,6 +762,8 @@
             resetBtn.addEventListener('click', async () => {
                 try {
                     await fetch('/reset', { method: 'POST' });
+                    // NEW: Clear localStorage on reset
+                    localStorage.removeItem('cardFlipGameState');
                     loadGame();
                     fullscreenOverlay.classList.remove('active');
                 } catch (error) {
@@ -540,8 +777,12 @@
                 }
             });
             
+            // Initialize game
             preloadImages();
             loadGame();
+            setInterval(shineRandomUnflippedCards, 7000);
+            setTimeout(shineRandomUnflippedCards, 2000);
+            scheduleTrainer(); // Start trainer scheduling
         });
     </script>
 </body>

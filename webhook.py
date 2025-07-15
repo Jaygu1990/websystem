@@ -410,8 +410,8 @@ def home():
             </style>
         </head>
         <body>
-            <h1>Located in Vancouver, Ship to USA & Canada</h1>
-            <h1>Free pack give away every 10 mins for new followers and buyers.</h1>
+            <h1>TCG Cards Flow Internal Control System</h1>
+          
             <div class="image-container">
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>
