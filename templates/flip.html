@@ -298,7 +298,7 @@
         /* Game Boy conversation window - TOP POSITION */
         .gameboy-window {
             position: fixed;
-            top: 200px;
+            top: 150px;
             left: 50%;
             transform: translateX(-50%);
             width: 80%;
@@ -455,8 +455,8 @@
             
             // NEW: Trainer timing system (1-5 minutes random, shows for 2 seconds)
             function scheduleTrainer() {
-                、const minInterval = 10000; // 1 minute
-                const maxInterval = 10000; // 5 minutes
+                const minInterval = 60000; // 1 minute
+                const maxInterval = 300000; // 5 minutes
                 const showDuration = 4000; // 2 seconds
                 
                 const randomInterval = Math.floor(
@@ -553,7 +553,7 @@
                 trainerSound.currentTime = 0;
                 trainerSound.play().catch(console.error);
                 
-                // Hide after 4 seconds
+                // Hide after 2 seconds
                 setTimeout(() => {
                     trainerOverlay.classList.remove('active');
                     gameboyWindow.classList.remove('active');
