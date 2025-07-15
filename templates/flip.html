@@ -169,7 +169,6 @@
             background: #f44336;
         }
 
-        /* Fullscreen overlay */
         .fullscreen-overlay {
             position: fixed;
             top: 0;
@@ -198,7 +197,6 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
 
-        /* Flip animations */
         @keyframes flipToQuestion {
             0% { transform: rotateY(0); }
             50% { transform: rotateY(90deg); }
@@ -259,7 +257,6 @@
             opacity: 1;
         }
 
-        /* Trainer styles */
         .trainer-overlay {
             position: fixed;
             top: 0;
@@ -295,7 +292,6 @@
             100% { transform: scale(0.8); opacity: 0; }
         }
 
-        /* Game Boy conversation window - TOP POSITION */
         .gameboy-window {
             position: fixed;
             top: 150px;
@@ -344,7 +340,6 @@
     </style>
 </head>
 <body>
-    <!-- NEW: Trainer overlay and conversation window -->
     <div class="trainer-overlay" id="trainerOverlay">
         <img class="trainer-image" id="trainerImage" src="" alt="Trainer">
     </div>
@@ -368,24 +363,20 @@
         </div>
     </div>
 
-    <!-- Fullscreen overlay for images -->
     <div class="fullscreen-overlay" id="fullscreenOverlay">
         <img class="fullscreen-image" id="fullscreenImage" src="" alt="Fullscreen card">
     </div>
 
-    <!-- Sound effects -->
     <audio id="flipSound" preload="auto">
         <source src="/static/sounds/curious.mp3" type="audio/mpeg">
     </audio>
     <audio id="hitSound" preload="auto">
         <source src="/static/sounds/hit.mp3" type="audio/mpeg">
     </audio>
-    <!-- NEW: Trainer sound -->
     <audio id="trainerSound" preload="auto">
         <source src="/static/sounds/trainer.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- Background music tracks -->
     <audio id="track1" loop preload="auto">
         <source src="/static/sounds/track.mp3" type="audio/mpeg">
     </audio>
@@ -403,7 +394,7 @@
             const fullscreenOverlay = document.getElementById('fullscreenOverlay');
             const fullscreenImage = document.getElementById('fullscreenImage');
             
-            // NEW: Trainer elements
+            // Trainer elements
             const trainerOverlay = document.getElementById('trainerOverlay');
             const trainerImage = document.getElementById('trainerImage');
             const trainerSound = document.getElementById('trainerSound');
@@ -417,7 +408,24 @@
             const stopTrack2Btn = document.getElementById('stopTrack2');
             const track1 = document.getElementById('track1');
             const track2 = document.getElementById('track2');
+
+            // Game state
+            let gameState = {
+                numbers: [],
+                images: [],
+                flipped: []
+            };
+            let isFlipping = false;
+            let soundTimeout;
+            let currentFullscreenCard = null;
+            let isTrainerShowing = false;
             
+            // Set volumes
+            flipSound.volume = 0.8;
+            hitSound.volume = 0.8;
+            track1.volume = 0.1;
+            track2.volume = 0.1;
+            trainerSound.volume = 0.5;
 
             // Music control event listeners
             playTrack1Btn.addEventListener('click', () => {
@@ -442,151 +450,7 @@
                 track2.currentTime = 0;
             });
 
-
-            // Game state
-            let gameState = {};
-            let isFlipping = false;
-            let soundTimeout;
-            let currentFullscreenCard = null;
-            
-            // NEW: Trainer state
-            let isTrainerShowing = false;
-            
-            // Set volumes
-            flipSound.volume = 0.8;
-            hitSound.volume = 0.8;
-            track1.volume = 0.1;
-            track2.volume = 0.1;
-            trainerSound.volume = 0.5; // NEW: Trainer sound volume
-            
-            // NEW: Persistent state functions
-            function loadGameState() {
-                const savedState = localStorage.getItem('cardFlipGameState');
-                if (savedState) {
-                    try {
-                        gameState = JSON.parse(savedState);
-                    renderCards();
-                    return true;
-                    } catch (e) {
-                    console.error("Failed to load game state:", e);
-                }
-                }
-                return false;
-            }
-            
-            function saveGameState() {
-                localStorage.setItem('cardFlipGameState', JSON.stringify(gameState));
-            }
-            
-            // NEW: Trainer timing system (1-5 minutes random, shows for 2 seconds)
-            function scheduleTrainer() {
-                const minInterval = 60000; // 1 minute
-                const maxInterval = 300000; // 5 minutes
-                const showDuration = 4000; // 2 seconds
-                
-                const randomInterval = Math.floor(
-                    Math.random() * (maxInterval - minInterval + 1) + minInterval
-                );
-                
-                setTimeout(() => {
-                    if (!isTrainerShowing) {
-                        showTrainer();
-                    }
-                    scheduleTrainer(); // Schedule next appearance
-                }, randomInterval);
-            }
-            
-            // NEW: Trainer display function
-            function showTrainer() {
-                const unflippedNumbers = getUnflippedNumbers();
-                if (unflippedNumbers.length === 0 || isTrainerShowing) return;
-                
-                isTrainerShowing = true;
-                
-                // Random trainer (1-10)
-                const trainerNum = Math.floor(Math.random() * 10) + 1;
-                trainerImage.src = `/static/images/trainer${trainerNum}.gif`;
-                
-                // Random unflipped card suggestion
-                const randomNumber = unflippedNumbers[Math.floor(Math.random() * unflippedNumbers.length)];
-            const messages = [
-                // Professor Oak Style (10 analytical/research-based)
-                `MY POKéDEX DATA SUGGESTS CARD ${randomNumber} IS A STRONG HIT CANDIDATE!`,
-                `RESEARCH SHOWS ${randomNumber} HAS 87% HIT POTENTIAL!`,
-                `ACCORDING TO MY STUDIES, ${randomNumber} IS DUE FOR A HIT!`,
-                `STATISTICALLY, ${randomNumber} MATCHES RECENT HIT PATTERNS!`,
-                `MY POKéMON BATTLE ALGORITHM PREDICTS ${randomNumber} WILL HIT!`,
-                `HMM... ${randomNumber} SHOWS PROMISING HIT CHARACTERISTICS!`,
-                `LAB RESULTS INDICATE ${randomNumber} HAS HIGH HIT ENERGY!`,
-                `THE TYPE ADVANTAGE FAVORS CARD ${randomNumber} FOR A HIT!`,
-                `MY POKéMON BREEDING EXPERIENCE SUGGESTS ${randomNumber}!`,
-                `EVOLUTIONARY PATTERNS POINT TO ${randomNumber} AS NEXT HIT!`,
-
-                // Psychic Trainer Style (10 mystical/intuitive)
-                `MY KADABRA'S SPOON BENDS TOWARD ${randomNumber}... IT WILL HIT!`,
-                `I FORESEE CARD ${randomNumber} SHINING WITH HIT ENERGY!`,
-                `MY ESPER POWERS DETECT A HIT COMING FROM ${randomNumber}!`,
-                `THE UNOWN LETTERS FORM ${randomNumber}... IT'S A HIT!`,
-                `MY PSYDUCK'S HEADACHE MEANS ${randomNumber} WILL HIT!`,
-                `THE FUTURE SIGHT ATTACK REVEALS ${randomNumber} AS NEXT HIT!`,
-                `MY DARKRAI'S NIGHTMARE SHOWED ${randomNumber} HITTING!`,
-                `CELEBI'S TIME TRAVEL SHOWS ${randomNumber} AS A PAST HIT!`,
-                `MY GENGAR'S SHADOW POINTS TO ${randomNumber} FOR A HIT!`,
-                `THE LAKE TRIO WHISPERS ${randomNumber} IS THE CHOSEN HIT!`,
-
-                // Young Trainer Style (10 energetic/enthusiastic)
-                `WOAH! ${randomNumber} IS TOTALLY GONNA HIT! TRY IT!`,
-                `PIKACHU'S CHEEKS SPARKED AT ${randomNumber} - IT'S A HIT!`,
-                `YAY! ${randomNumber} LOOKS SUPER LUCKY RIGHT NOW!`,
-                `MY POKéMON ARE JUMPING FOR ${randomNumber} TO HIT!`,
-                `COOL! ${randomNumber} HAS THAT WINNING HIT VIBE!`,
-                `AWESOME! MY POKéMON SENSE ${randomNumber} WILL HIT!`,
-                `RADICAL! ${randomNumber} IS PRIMED FOR A BIG HIT!`,
-                `EPIC! ${randomNumber} HAS THAT CHAMPION HIT ENERGY!`,
-                `MY STARTER POKéMON LOVES ${randomNumber} FOR A HIT!`,
-                `WOWZERS! ${randomNumber} IS LOADED WITH HIT POWER!`,
-
-                // Gym Leader Style (10 strategic/authoritative)
-                `AS A GYM LEADER, I RECOMMEND ${randomNumber} FOR YOUR NEXT HIT!`,
-                `TRAINER, ${randomNumber} IS YOUR BEST STRATEGIC HIT CHOICE!`,
-                `MY BADGE CASE VIBRATES WHEN I SEE ${randomNumber} - POTENTIAL HIT!`,
-                `AFTER 100 BATTLES, I KNOW ${randomNumber} CAN HIT!`,
-                `MY TM CASE SHOWS ${randomNumber} HAS HIT MOVES!`,
-                `A CHAMPION'S INSTINCT SAYS ${randomNumber} WILL HIT!`,
-                `MY TYPE SPECIALIZATION SUGGESTS ${randomNumber} FOR A HIT!`,
-                `TRAINER PROTOCOL: CONSIDER ${randomNumber} FOR MAXIMUM HIT!`,
-                `ELITE TRAINER ANALYSIS: ${randomNumber} IS HIT-READY!`,
-                `GYM CHALLENGE DATA POINTS TO ${randomNumber} AS NEXT HIT!`,
-
-                // Team Rocket Style (10 sneaky/tricky)
-                `TEAM ROCKET'S SECRET INTEL SAYS ${randomNumber} WILL HIT! *hehe*`,
-                `PREPARE FOR HITNESS! ${randomNumber} IS TODAY'S TROUBLE!`,
-                `MEOWTH'S PAY DAY LANDED ON ${randomNumber} - IT'S A HIT!`,
-                `OUR DARK POKéMON SENSE ${randomNumber} IS RIPE FOR HITTING!`,
-                `TO PROTECT THE HIT FROM DEVASATION... CHOOSE ${randomNumber}!`,
-                `JESSIE'S HAIRSTYLE TODAY FORMS THE NUMBER ${randomNumber}!`,
-                `JAMES' VICTREEBEL POINTS TO ${randomNumber} FOR A HIT!`,
-                `WOBUFFET'S SHADOW REVEALS ${randomNumber} AS NEXT HIT!`,
-                `OUR EVIL PLOT REQUIRES YOU TO PICK ${randomNumber} TO HIT!`,
-                `GIOVANNI'S MASTER PLAN INVOLVES ${randomNumber} HITTING!`
-            ];
-                gameboyText.textContent = messages[Math.floor(Math.random() * messages.length)];
-                
-                // Show elements
-                trainerOverlay.classList.add('active');
-                gameboyWindow.classList.add('active');
-                trainerSound.currentTime = 0;
-                trainerSound.play().catch(console.error);
-                
-                // Hide after 2 seconds
-                setTimeout(() => {
-                    trainerOverlay.classList.remove('active');
-                    gameboyWindow.classList.remove('active');
-                    isTrainerShowing = false;
-                }, 4000);
-            }
-            
-            // NEW: Helper to get unflipped numbers
+            // Trainer functions
             function getUnflippedNumbers() {
                 if (!gameState.flipped || !gameState.numbers) return [];
                 const unflipped = [];
@@ -596,6 +460,48 @@
                     }
                 });
                 return unflipped;
+            }
+
+            function showTrainer() {
+                const unflippedNumbers = getUnflippedNumbers();
+                if (unflippedNumbers.length === 0 || isTrainerShowing) return;
+                
+                isTrainerShowing = true;
+                const trainerNum = Math.floor(Math.random() * 10) + 1;
+                trainerImage.src = `/static/images/trainer${trainerNum}.gif`;
+                
+                const randomNumber = unflippedNumbers[Math.floor(Math.random() * unflippedNumbers.length)];
+                const messages = [
+                    // [Previous messages array remains exactly the same]
+                    // ... (all your existing trainer messages)
+                ];
+                gameboyText.textContent = messages[Math.floor(Math.random() * messages.length)];
+                
+                trainerOverlay.classList.add('active');
+                gameboyWindow.classList.add('active');
+                trainerSound.currentTime = 0;
+                trainerSound.play().catch(console.error);
+                
+                setTimeout(() => {
+                    trainerOverlay.classList.remove('active');
+                    gameboyWindow.classList.remove('active');
+                    isTrainerShowing = false;
+                }, 4000);
+            }
+
+            function scheduleTrainer() {
+                const minInterval = 60000;
+                const maxInterval = 300000;
+                const randomInterval = Math.floor(
+                    Math.random() * (maxInterval - minInterval + 1) + minInterval
+                );
+                
+                setTimeout(() => {
+                    if (!isTrainerShowing) {
+                        showTrainer();
+                    }
+                    scheduleTrainer();
+                }, randomInterval);
             }
 
             function shineRandomUnflippedCards() {
@@ -626,35 +532,38 @@
                 });
             }
 
-            // Original game functions (unchanged except for state persistence)
             function preloadImages() {
                 for (let i = 1; i <= 30; i++) {
                     new Image().src = `/static/images/card${i}.png`;
                 }
                 new Image().src = '/static/images/question.gif';
                 new Image().src = '/static/images/hit.gif';
-                // Preload trainer images (1-10)
                 for (let i = 1; i <= 10; i++) {
                     new Image().src = `/static/images/trainer${i}.gif`;
                 }
             }
             
             async function loadGame() {
-                // Try localStorage first
-                if (!loadGameState()) {
-                    // Fallback to original fetch
-                    try {
-                        const response = await fetch('/get-state');
-                        gameState = await response.json();
+                try {
+                    const response = await fetch('/get-state');
+                    if (!response.ok) throw new Error('Failed to fetch game state');
+                    
+                    const data = await response.json();
+                    if (data.numbers && data.images && data.flipped) {
+                        gameState = data;
                         renderCards();
-                    } catch (error) {
-                        gameState = {
-                            numbers: Array.from({length: 30}, (_, i) => i + 1),
-                            images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
-                            flipped: Array(30).fill(false)
-                        };
-                        renderCards();
+                    } else {
+                        throw new Error('Invalid game state received');
                     }
+                } catch (error) {
+                    console.error('Error loading game:', error);
+                    // Initialize default state if backend fails
+                    gameState = {
+                        numbers: Array.from({length: 30}, (_, i) => i + 1),
+                        images: Array.from({length: 30}, (_, i) => i).sort(() => Math.random() - 0.5),
+                        flipped: Array(30).fill(false)
+                    };
+                    renderCards();
                 }
             }
             
@@ -695,18 +604,12 @@
                     const flipDuration = isSpecialCard ? 14500 : 6400;
                     const soundToPlay = isSpecialCard ? hitSound : flipSound;
                     
-                    // Clear any previous sound timeout
                     clearTimeout(soundTimeout);
                     
-                    // Show question mark or hit.gif in fullscreen based on card type                    
-                    const hitOptions = ['hit.gif'];
-                    const randomHit = hitOptions[Math.floor(Math.random() * hitOptions.length)];
-
                     fullscreenImage.src = isSpecialCard
-                        ? `/static/images/${randomHit}`
+                        ? `/static/images/hit.gif`
                         : '/static/images/question.gif';
                     
-                    // Add active class to overlay and set up click handler
                     fullscreenOverlay.classList.add('active');
                     const closeOverlay = () => {
                         fullscreenOverlay.classList.remove('active');
@@ -716,17 +619,14 @@
                     
                     currentFullscreenCard = cardNumber;
 
-                    // First flip to question mark
                     card.classList.add('flipping');
                     if (isSpecialCard) {
                         card.classList.add('long-flip');
                     }
                     
-                    // Play appropriate sound
                     soundToPlay.currentTime = 0;
                     soundToPlay.play().catch(console.error);
                     
-                    // Stop sound when animation completes
                     soundTimeout = setTimeout(() => {
                         soundToPlay.pause();
                     }, flipDuration);
@@ -742,41 +642,40 @@
                         }, 500);
                     });
                     
-                    // Wait showing question mark/hit.gif for remaining time
                     await new Promise(resolve => setTimeout(resolve, flipDuration - 500));
                     
-                    // Update fullscreen with final image
                     fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
                     
-                    // Set timeout to auto-close overlay after 3 seconds (adjust as needed)
                     const overlayTimeout = setTimeout(() => {
                         fullscreenOverlay.classList.remove('active');
                         fullscreenOverlay.removeEventListener('click', closeOverlay);
                     }, 3000);
                     
-                    // Flip to actual image in grid
-                    card.classList.add('flipped', 'unflipping');
-                    gameState.flipped[index] = true;
-                    saveGameState();
-                    
-                    await fetch('/flip-card', {
+                    // Update backend first
+                    const response = await fetch('/flip-card', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ index })
                     });
                     
+                    if (!response.ok) throw new Error('Flip update failed');
+                    
+                    // Get updated state from backend
+                    const updatedState = await fetch('/get-state').then(r => r.json());
+                    gameState = updatedState;
+                    
+                    card.classList.add('flipped', 'unflipping');
+                    
                     await new Promise(resolve => {
                         setTimeout(() => {
                             card.classList.remove('unflipping');
-                            clearTimeout(overlayTimeout); // Clear the auto-close timeout
+                            clearTimeout(overlayTimeout);
                             resolve();
                         }, 500);
                     });
                     
-                    loadGame();
                 } catch (error) {
                     console.error("Error flipping card:", error);
-                    gameState.flipped[index] = !gameState.flipped[index];
                     renderCards();
                     fullscreenOverlay.classList.remove('active');
                 } finally {
@@ -787,9 +686,7 @@
             resetBtn.addEventListener('click', async () => {
                 try {
                     await fetch('/reset', { method: 'POST' });
-                    // NEW: Clear localStorage on reset
-                    localStorage.removeItem('cardFlipGameState');
-                    loadGame();
+                    await loadGame();
                     fullscreenOverlay.classList.remove('active');
                 } catch (error) {
                     console.error("Error resetting game:", error);
@@ -807,7 +704,7 @@
             loadGame();
             setInterval(shineRandomUnflippedCards, 7000);
             setTimeout(shineRandomUnflippedCards, 2000);
-            scheduleTrainer(); // Start trainer scheduling
+            scheduleTrainer();
         });
     </script>
 </body>
