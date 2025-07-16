@@ -592,96 +592,99 @@
                 });
             }
             
-            async function flipCard(index) {
-                if (isFlipping || gameState.flipped[index]) return;
-                isFlipping = true;
+        async function flipCard(index) {
+            if (isFlipping || gameState.flipped[index]) return;
+            isFlipping = true;
+            
+            try {
+                const card = cardGrid.children[index];
+                const inner = card.querySelector('.card-inner');
+                const backImage = card.querySelector('.back img');
+                const cardNumber = gameState.images[index] + 1;
+                const isSpecialCard = cardNumber === 27 || cardNumber === 28;
+                const flipDuration = isSpecialCard ? 14500 : 6400;
+                const soundToPlay = isSpecialCard ? hitSound : flipSound;
                 
-                try {
-                    const card = cardGrid.children[index];
-                    const inner = card.querySelector('.card-inner');
-                    const cardNumber = gameState.images[index] + 1;
-                    const isSpecialCard = cardNumber === 27 || cardNumber === 28;
-                    const flipDuration = isSpecialCard ? 14500 : 6400;
-                    const soundToPlay = isSpecialCard ? hitSound : flipSound;
-                    
-                    clearTimeout(soundTimeout);
-                    
-                    fullscreenImage.src = isSpecialCard
-                        ? `/static/images/hit.gif`
-                        : '/static/images/question.gif';
-                    
-                    fullscreenOverlay.classList.add('active');
-                    const closeOverlay = () => {
-                        fullscreenOverlay.classList.remove('active');
-                        fullscreenOverlay.removeEventListener('click', closeOverlay);
-                    };
-                    fullscreenOverlay.addEventListener('click', closeOverlay);
-                    
-                    currentFullscreenCard = cardNumber;
-
-                    card.classList.add('flipping');
-                    if (isSpecialCard) {
-                        card.classList.add('long-flip');
-                    }
-                    
-                    soundToPlay.currentTime = 0;
-                    soundToPlay.play().catch(console.error);
-                    
-                    soundTimeout = setTimeout(() => {
-                        soundToPlay.pause();
-                    }, flipDuration);
-                    
-                    await new Promise(resolve => {
-                        setTimeout(() => {
-                            inner.style.transform = 'rotateY(180deg)';
-                            card.classList.remove('flipping');
-                            if (isSpecialCard) {
-                                card.classList.remove('long-flip');
-                            }
-                            resolve();
-                        }, 500);
-                    });
-                    
-                    await new Promise(resolve => setTimeout(resolve, flipDuration - 500));
-                    
-                    fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
-                    
-                    const overlayTimeout = setTimeout(() => {
-                        fullscreenOverlay.classList.remove('active');
-                        fullscreenOverlay.removeEventListener('click', closeOverlay);
-                    }, 3000);
-                    
-                    // Update backend first
-                    const response = await fetch('/flip-card', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ index })
-                    });
-                    
-                    if (!response.ok) throw new Error('Flip update failed');
-                    
-                    // Get updated state from backend
-                    const updatedState = await fetch('/get-state').then(r => r.json());
-                    gameState = updatedState;
-                    
-                    card.classList.add('flipped', 'unflipping');
-                    
-                    await new Promise(resolve => {
-                        setTimeout(() => {
-                            card.classList.remove('unflipping');
-                            clearTimeout(overlayTimeout);
-                            resolve();
-                        }, 500);
-                    });
-                    
-                } catch (error) {
-                    console.error("Error flipping card:", error);
-                    renderCards();
+                clearTimeout(soundTimeout);
+                
+                fullscreenImage.src = isSpecialCard
+                    ? `/static/images/hit.gif`
+                    : '/static/images/question.gif';
+                
+                fullscreenOverlay.classList.add('active');
+                const closeOverlay = () => {
                     fullscreenOverlay.classList.remove('active');
-                } finally {
-                    isFlipping = false;
+                    fullscreenOverlay.removeEventListener('click', closeOverlay);
+                };
+                fullscreenOverlay.addEventListener('click', closeOverlay);
+                
+                currentFullscreenCard = cardNumber;
+
+                card.classList.add('flipping');
+                if (isSpecialCard) {
+                    card.classList.add('long-flip');
                 }
+                
+                soundToPlay.currentTime = 0;
+                soundToPlay.play().catch(console.error);
+                
+                soundTimeout = setTimeout(() => {
+                    soundToPlay.pause();
+                }, flipDuration);
+                
+                await new Promise(resolve => {
+                    setTimeout(() => {
+                        inner.style.transform = 'rotateY(180deg)';
+                        card.classList.remove('flipping');
+                        if (isSpecialCard) {
+                            card.classList.remove('long-flip');
+                        }
+                        resolve();
+                    }, 500);
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, flipDuration - 500));
+                
+                fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
+                
+                const overlayTimeout = setTimeout(() => {
+                    fullscreenOverlay.classList.remove('active');
+                    fullscreenOverlay.removeEventListener('click', closeOverlay);
+                }, 3000);
+                
+                // Update backend first
+                const response = await fetch('/flip-card', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ index })
+                });
+                
+                if (!response.ok) throw new Error('Flip update failed');
+                
+                // Update the card image immediately
+                backImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
+                card.classList.add('flipped', 'unflipping');
+                
+                await new Promise(resolve => {
+                    setTimeout(() => {
+                        card.classList.remove('unflipping');
+                        clearTimeout(overlayTimeout);
+                        resolve();
+                    }, 500);
+                });
+                
+                // Get updated state from backend
+                const updatedState = await fetch('/get-state').then(r => r.json());
+                gameState = updatedState;
+                
+            } catch (error) {
+                console.error("Error flipping card:", error);
+                renderCards();
+                fullscreenOverlay.classList.remove('active');
+            } finally {
+                isFlipping = false;
             }
+        }
             
             resetBtn.addEventListener('click', async () => {
                 try {
