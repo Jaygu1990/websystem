@@ -41,6 +41,7 @@ print_jobs = []
 pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle',    'eevee', 'mew']
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    global count
     data = request.json
     print("Received Webhook:", data)
     
@@ -94,12 +95,13 @@ def webhook():
                 game_queue.append(customer_data)
                 if product_name.lower() != "shipping" and product_name != 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet The Glory of Team Rocket Pack sv10 (Japanese) - OPEN LIVE / Battle' and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 1" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 2" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 3" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 4":
                     print_jobs.append(customer_data)
+                if product_name == "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE":
+                    count+=quantity   
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
             if product_name == "Pokemon Card TCG S-Chinese Horizons Gemstone Booster Box V2 (Chinese) - PRE ORDER":
                 preorder.append(customer_data)
-            if product_name == "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE":
-                count+=quantity   
+
                           
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
