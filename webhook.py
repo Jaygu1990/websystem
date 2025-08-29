@@ -21,7 +21,7 @@ user_list_holder = []
 game_queue = []
 followers = set()
 preorder = []
-
+count=0
 
 # client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
@@ -98,7 +98,9 @@ def webhook():
                 user_list.append(first_name.split()[0])
             if product_name == "Pokemon Card TCG S-Chinese Horizons Gemstone Booster Box V2 (Chinese) - PRE ORDER":
                 preorder.append(customer_data)
-                
+            if product_name == "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE":
+                count+=quantity   
+                          
             # Add to game_queue only if the product is "draw"
             # if product_name.lower() == "pokemon game":
             #     game_queue.append(customer_data)
@@ -107,11 +109,12 @@ def webhook():
 
 @app.route('/add_dummy_order', methods=['POST'])
 def add_order():
+    global count
     # Create dummy order data
     dummy_order = {
         "id": random.randint(1000, 9999),  # Generate a random order ID
         "completed": False,
-        "product_name": "ABCD",
+        "product_name": "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE",
         "quantity": random.randint(1, 5),  # Random quantity between 1 and 5
         "first_name": "John",
         "last_name": "Doe",
@@ -124,6 +127,7 @@ def add_order():
     game_queue.append(dummy_order)
     user_list.append(first_name.split()[0])
     preorder.append(dummy_order)
+    count+=dummy_order['quantity']
     
     return jsonify({"message": "Dummy order added", "order": dummy_order})
 
@@ -136,6 +140,12 @@ def get_queue():
 @app.route('/queueforviewers', methods=['GET'])
 def get_queueforviewers():
     return render_template('queueforviewers.html', queue=queue)
+
+@app.route('/count', methods=['GET'])
+def get_count():
+    return render_template('count.html', queue=queue)
+
+
 
 @app.route('/queue_data', methods=['GET'])
 def queue_data():
@@ -153,6 +163,13 @@ def preorderqueue():
     return jsonify({
         "preorder":preorder
     })
+
+@app.route('/pull_count', methods=['GET'])
+def pull_count():
+    return jsonify({
+        "count":count
+    })
+
 
 
 @app.route('/complete/<int:index>', methods=['POST'])
@@ -185,7 +202,11 @@ def preorderclear_queue():
     preorder.clear()
     return '', 204  
 
-
+@app.route('/minus_count', methods=['POST'])
+def minus_count():
+    global count
+    count-=1
+    return '', 204  
 
 @app.route('/select_random_customers', methods=['POST'])
 def select_random_customers():
@@ -427,6 +448,7 @@ def home():
                 <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
                 <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
                 <button class="button" onclick="window.location.href='/flipgame'">Go to Flip</button>
+                <button class="button" onclick="window.location.href='/count'">Go to Count</button>
             </div>
         </body>
     </html>

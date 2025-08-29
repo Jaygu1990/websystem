@@ -40,6 +40,7 @@
         <button id="battle" onclick="clearBattle()">Clear Battle</button>
         <button id="Energy" onclick="Energy()">Run Energy</button>
         <button id="Preorder" onclick="clearPreorder()">Clear Pre Order</button>
+        <button id="Preorder" onclick="minusCount()">Minus Count</button>
     </div>
 
     <table id="queue-table">
@@ -144,6 +145,16 @@
                 }
               });
           }
+
+          function minusCount() {
+            fetch('/minus_count', { method: 'POST' })
+              .then(response => {
+                if (response.ok) {
+                    fetchQueue();  
+                }
+              });
+          }
+
 
         setInterval(fetchQueue, 3000); // Fetch new data every 3 seconds
     </script>
