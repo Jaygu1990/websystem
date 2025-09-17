@@ -210,6 +210,14 @@ def minus_count():
     count-=1
     return '', 204  
 
+
+@app.route('/add_count', methods=['POST'])
+def add_count():
+    global count
+    count+=1
+    return '', 204  
+
+
 @app.route('/select_random_customers', methods=['POST'])
 def select_random_customers():
     # Check if there are at least 12 customers in the game queue
@@ -819,18 +827,18 @@ def music_player():
 
 
 flip_state = {
-    'numbers': [i+1 for i in range(30)],  # Fixed order 1-30
+    'numbers': [i+1 for i in range(50)],  # Fixed order 1-30
     'images': [],                         # Will be initialized when needed
-    'flipped': [False]*30                 # All start face down
+    'flipped': [False]*50                 # All start face down
 }
 
 def initialize_state():
     """Initialize the game state with shuffled images"""
-    image_indices = list(range(30))  # Changed to 30
+    image_indices = list(range(50))  # Changed to 30
     shuffle(image_indices)
     
     flip_state['images'] = image_indices
-    flip_state['flipped'] = [False]*30  # Changed to 30
+    flip_state['flipped'] = [False]*50  # Changed to 50
     return flip_state
 
 def flip_load_state():
@@ -843,6 +851,22 @@ def flip_load_state():
 def flip_game():
     """Serve the game page"""
     return render_template('flip.html')
+
+@app.route('/flipgame2')
+def flip_game2():
+    """Serve the game page"""
+    return render_template('flip2.html')
+
+@app.route('/flipgame3')
+def flip_game3():
+    """Serve the game page"""
+    return render_template('flip3.html')
+
+@app.route('/flipgame4')
+def flip_game4():
+    """Serve the game page"""
+    return render_template('flip4.html')
+
 
 @app.route('/get-state')
 def flip_get_state():
@@ -860,7 +884,7 @@ def flip_card():
     card_index = request.json.get('index')
     
     # Changed the validation to check for 30 cards instead of 27
-    if card_index is None or not 0 <= card_index < 30:
+    if card_index is None or not 0 <= card_index < 50:
         return jsonify({'success': False, 'error': 'Invalid card index'}), 400
     
     state = flip_load_state()

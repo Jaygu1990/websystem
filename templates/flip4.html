@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Five Doors — Pass/Fail</title>
+
+<link rel="preload" as="image" href="/static/images/door.png" />
+<link rel="preload" as="image" href="/static/images/pass.gif" />
+<link rel="preload" as="image" href="/static/images/pokeball.png" />
+<link rel="preload" as="audio" href="/static/sounds/door.mp3" />
+
+<style>
+  :root{
+    --bg:#0b0f14; --text:#e5e7eb; --muted:#9ca3af; --danger:#ef4444;
+    --primary:#3b82f6;  /* blue */
+    --accent:#22c55e;   /* green */
+    --ring: rgba(59,130,246,.45);
+  }
+
+  *{ box-sizing:border-box }
+  html,body{ height:100%; margin:0 }
+  body{
+    font-family: system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    color:var(--text);
+    background:url('/static/images/castle.png') center/cover no-repeat fixed;
+    display:flex; flex-direction:column;
+  }
+
+  .app{ max-width:1200px; margin:24px auto; width:calc(100% - 32px) }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+    gap:16px; flex-wrap:wrap;
+  }
+  h1{
+    font-size:28px; line-height:1.2; font-weight:800; margin:0;
+    letter-spacing:.2px;
+    background:linear-gradient(180deg,#fff,#cbd5e1);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 1px 0 rgba(0,0,0,.2);
+  }
+  .sub{
+    display:block; font-size:14px; color:var(--muted); font-weight:500; margin-top:4px;
+  }
+
+  .controls{ display:flex; gap:12px; align-items:center; flex-wrap:wrap }
+
+ /* Buttons — darker, weightier look */
+.btn{
+  appearance:none; -webkit-appearance:none;
+  background:linear-gradient(180deg, #1f2937, #111827); /* dark slate gradient */
+  color:var(--text);
+  border:1px solid #374151;
+  padding:14px 20px;
+  border-radius:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition: transform .08s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, filter .2s ease;
+  backdrop-filter: blur(4px);
+  font-size:16px; letter-spacing:.2px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+.btn:hover{
+  background:linear-gradient(180deg, #2a3447, #171c28);
+  border-color:#4b5563;
+  filter:brightness(1.05);
+}
+.btn:active{ transform:translateY(1px) }
+.btn:focus-visible{
+  outline:none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.15), 0 6px 18px rgba(0,0,0,.5);
+}
+
+/* If you still want two variations, just keep them subtle */
+.btn-primary{
+  background:linear-gradient(180deg, #1e3a8a, #111827); /* dark navy */
+  border-color:#334155;
+}
+.btn-accent{
+  background:linear-gradient(180deg, #064e3b, #111827); /* dark green-slate */
+  border-color:#334155;
+}
+
+
+  .hint{ color:var(--muted); font-size:15px; font-weight:600 }
+
+  /* Stage — keep your exact layout */
+  .stage{
+    position:relative;
+    background: rgba(0,0,0,.55);
+    border:1px solid #1f2937; border-radius:16px;
+    padding:28px 22px 18px; box-shadow: 0 10px 30px rgba(0,0,0,.35) inset;
+    min-height: 520px;
+    overflow:hidden;
+    margin-top: 600px;
+    width: 1400px;
+  }
+  .stage::before{
+    content:""; position:absolute; inset:-2px; pointer-events:none;
+    box-shadow: inset 0 0 140px rgba(0,0,0,.55), inset 0 0 40px rgba(0,0,0,.35);
+    border-radius:16px;
+  }
+
+  /* Doors row */
+  .doors{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2%;
+    justify-content:center;
+    margin:0 auto;
+  }
+
+  .door{
+    position: relative;               /* anchor overlays */
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    height: auto;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.38));
+    border: none;
+    border-radius: 10px;
+    box-shadow:
+      0 6px 18px rgba(0,0,0,.55),
+      inset 0 0 0 2px rgba(255,255,255,.14);
+    transition: filter .15s ease, transform .08s ease, box-shadow .15s ease;
+  }
+  .door::after{ /* visible knob for readability */
+    content:"";
+    position:absolute;
+    right:10%;
+    top:50%;
+    width:16px; height:16px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(255,215,0,.95) 40%, rgba(90,60,10,.92) 75%);
+    box-shadow: 0 0 8px rgba(255,215,0,.4), inset 0 0 2px rgba(0,0,0,.55);
+    transform: translateY(-50%);
+  }
+  .door:hover{
+    filter:brightness(1.12);
+    box-shadow:
+      0 10px 26px rgba(0,0,0,.65),
+      inset 0 0 0 2px rgba(255,255,255,.18);
+  }
+  .door:active{ transform:translateY(2px) }
+
+  /* Red X overlay INSIDE each door (shows on fail; no fail GIF) */
+  .door .redx{
+    position:absolute; inset:0;
+    display:none;                       /* toggled via JS */
+    align-items:center; justify-content:center;
+    background: rgba(0,0,0,.35);
+    z-index: 5;                         /* above door art */
+    pointer-events:none;
+    border-radius: 10px;
+  }
+  .door .redx::before, .door .redx::after{
+    content:""; position:absolute; width:80%; height:12px; background:var(--danger); border-radius:10px;
+    box-shadow: 0 0 18px rgba(239,68,68,.6);
+  }
+  .door .redx::before{ transform:rotate(45deg) }
+  .door .redx::after{ transform:rotate(-45deg) }
+
+  /* Center overlay — ONLY for pass gif */
+  .overlay{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    background: radial-gradient(600px 300px at 50% 30%, rgba(0,0,0,.75), rgba(0,0,0,.92));
+    z-index:30;
+  }
+  .overlay.show{ display:flex }
+  .overlay .panel{
+    background:rgba(15,21,32,.9); border:1px solid #253043; border-radius:16px;
+    padding:16px; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    max-width:min(85vw, 900px); max-height:min(70vh, 520px);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .overlay img{ max-width:100%; max-height:60vh; display:block; }
+
+  /* Bottom balls strip */
+  .balls{
+    position:absolute; left:0; right:0; bottom:0; padding:12px 20px;
+    display:none; gap:12px; justify-content:center; align-items:center;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.45));
+  }
+  .balls.show{ display:flex }
+  .balls img{ height:52px; width:auto }  /* bigger */
+
+  /* Make controls scale a bit on small screens */
+  @media (max-width: 820px){
+    h1{ font-size:24px }
+    .btn{ font-size:15px; padding:12px 16px }
+    .hint{ font-size:14px }
+  }
+  @media (max-width: 640px){
+    h1{ font-size:22px }
+    .btn{ font-size:14px; padding:10px 14px }
+    .balls img{ height:40px }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Five Doors — Pass or Fail</h1>
+        <span class="sub">4 doors are open, 1 door is closed — everything is random</span>
+      </div>
+      <div class="controls">
+        <button id="resetBtn" class="btn btn-accent" title="Start a new round">Reset</button>
+        <button id="flipBtn"  class="btn btn-primary" title="Go to the Flip Game">Go to Flip Game</button>
+        <span class="hint" id="statusHint">Choose a door.</span>
+      </div>
+    </header>
+
+    <section class="stage" id="stage" aria-live="polite">
+      <div class="doors" id="doorsRow" aria-label="Doors"></div>
+
+      <!-- Overlay used ONLY for PASS animation -->
+      <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="panel">
+          <img id="overlayImg" alt="Pass" />
+        </div>
+      </div>
+
+      <!-- Bottom balls -->
+      <div class="balls" id="ballsStrip" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  const IMG = '/static/images/';
+  const SND = '/static/sounds/';
+  const DOOR_COUNT = 5;
+
+  const ASSETS = {
+    pass: IMG + 'pass.gif',
+    ball: IMG + 'pokeball.png',
+    doorSfx: SND + 'door.mp3'
+  };
+
+  // Elements
+  const doorsRow   = document.getElementById('doorsRow');
+  const overlay    = document.getElementById('overlay');
+  const overlayImg = document.getElementById('overlayImg');
+  const ballsStrip = document.getElementById('ballsStrip');
+  const statusHint = document.getElementById('statusHint');
+  const resetBtn   = document.getElementById('resetBtn');
+  const btnFlip    = document.getElementById('flipBtn');
+
+  // State
+  let failIndex = -1;
+  let gameOver  = false;
+  let passCount = 0;
+
+  // Audio (overlap-safe, unlock on first gesture)
+  const sfxDoorBase = new Audio(ASSETS.doorSfx);
+  sfxDoorBase.preload = 'auto';
+  sfxDoorBase.volume = 0.9;
+  let audioUnlocked = false;
+
+  function unlockAudioOnce() {
+    if (audioUnlocked) return;
+    try {
+      sfxDoorBase.play().then(() => {
+        sfxDoorBase.pause();
+        sfxDoorBase.currentTime = 0;
+        audioUnlocked = true;
+      }).catch(()=>{});
+    } catch(_) {}
+  }
+
+  function playDoor() {
+    try {
+      const a = sfxDoorBase.cloneNode();
+      a.volume = sfxDoorBase.volume;
+      a.play().catch(()=>{});
+    } catch(_) {}
+  }
+
+  // Build doors
+  const doors = [];
+  for (let i = 0; i < DOOR_COUNT; i++) {
+    const d = document.createElement('button');
+    d.className = 'door';
+    d.setAttribute('aria-label', `Door ${i+1}`);
+    d.dataset.index = String(i);
+
+    // X overlay for FAIL
+    const x = document.createElement('div');
+    x.className = 'redx';
+    d.appendChild(x);
+
+    d.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+    d.addEventListener('click', onDoorClick);
+    doorsRow.appendChild(d);
+    doors.push(d);
+  }
+
+  // Preload images
+  [ASSETS.pass, ASSETS.ball].forEach(src => { const im = new Image(); im.src = src; });
+
+  // UI
+  resetBtn.addEventListener('click', resetRun);
+  resetBtn.addEventListener('pointerdown', unlockAudioOnce, { once: true });
+  overlay.addEventListener('click', clearOverlay);
+  btnFlip.addEventListener('click', () => {
+    // Navigate to Flip Game (server should route /flipgame)
+    const base = location.origin || '';
+    window.location.href = base + '/flipgame';
+  });
+
+  // Start
+  resetRun();
+
+  /* ---------- Helpers ---------- */
+
+  function clearOverlay(){
+    // Hide and fully reset the GIF so next play starts from frame 0
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+    overlayImg.removeAttribute('src');
+  }
+
+  function showPassOverlay(){
+    clearOverlay();
+    overlayImg.src = ASSETS.pass + '?t=' + Date.now(); // restart gif cleanly
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+  }
+
+  function addBall(){
+    if (!ballsStrip.classList.contains('show')) ballsStrip.classList.add('show');
+    const b = document.createElement('img');
+    b.src = ASSETS.ball;
+    b.alt = 'Pokéball';
+    ballsStrip.appendChild(b);
+  }
+
+  function rerollFail(){
+    failIndex = Math.floor(Math.random() * DOOR_COUNT);   // 1 fail, 4 pass per round
+  }
+
+  function resetRun(){
+    gameOver = false;
+    passCount = 0;
+    clearOverlay();
+    ballsStrip.innerHTML = '';
+    ballsStrip.classList.remove('show');
+    statusHint.textContent = 'Choose a door. Survive as many rounds as you can!';
+    doors.forEach(d => {
+      d.disabled = false;
+      d.querySelector('.redx').style.display = 'none';
+      d.style.filter = '';
+    });
+    rerollFail();
+  }
+
+  /* ---------- Main click ---------- */
+
+  function onDoorClick(e){
+    // Always clear any previous overlay/GIF before resolving the new click
+    clearOverlay();
+
+    playDoor();
+    if (gameOver) return;
+
+    const idx = Number(e.currentTarget.dataset.index);
+
+    // Lock input during resolution
+    doors.forEach(d => d.disabled = true);
+
+    if (idx === failIndex) {
+      // FAIL: show the X INSIDE the clicked door; no fail GIF
+      const redx = e.currentTarget.querySelector('.redx');
+      redx.style.display = 'flex';
+
+      statusHint.textContent =
+        `Fail at door ${idx+1}. You passed ${passCount} round${passCount===1?'':'s'}. Press Reset to try again.`;
+
+      gameOver = true;
+      return;
+    }
+
+    // PASS: add one ball and show fresh pass GIF
+    passCount++;
+    addBall();
+    showPassOverlay();
+    statusHint.textContent = `Pass #${passCount}! Pick again.`;
+
+    // Prep next round
+    rerollFail();
+
+    // Re-enable doors so the player can continue immediately
+    doors.forEach(d => d.disabled = false);
+  }
+})();
+</script>
+
+</body>
+</html>

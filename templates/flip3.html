@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Squid Bridge — Clean Layout</title>
+<style>
+  :root{
+    --lane-size: min(48vh, 420px);
+    --panel: rgba(0,0,0,.35);
+    --card: rgba(12,18,32,.78);
+    --muted:#9ca3af; --ok:#22c55e; --blue:#3b82f6;
+    --avatar-scale: 50%;
+    --avatar-shift: -6%;
+  }
+
+  *{ box-sizing:border-box }
+  html,body{ height:100%; margin:0 }
+
+  body{
+    color:#e5e7eb; font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:url('/static/images/wheat.gif') center/cover fixed no-repeat;
+  }
+
+  .flash{ position:fixed; inset:0; background:rgba(255,0,0,0); pointer-events:none; z-index:9999; opacity:0 }
+  .flash.active{ animation:flashRed .35s ease-in-out 3 }
+  @keyframes flashRed{
+    0%{background:rgba(255,0,0,0);opacity:0}
+    40%{background:rgba(255,0,0,.55);opacity:1}
+    100%{background:rgba(255,0,0,0);opacity:0}
+  }
+
+  .layout{
+    height:100vh; width:100%;
+    display:grid; grid-template-columns: 1fr 380px; gap:16px; padding:16px;
+    background:linear-gradient(0deg,rgba(0,0,0,.15),rgba(0,0,0,.15));
+  }
+
+  .left{
+    border-radius:20px; overflow:hidden; backdrop-filter:blur(4px);
+    background:var(--panel); border:1px solid rgba(255,255,255,.08);
+    display:grid; grid-template-rows: var(--lane-size) 1fr;
+  }
+
+  .dollWrap{
+    display:grid;
+    grid-template-columns: var(--lane-size) auto;
+    align-items:center; gap:16px; padding:12px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    justify-content:center;
+  }
+
+  .doll{
+    width:var(--lane-size); aspect-ratio:1/1;
+    border-radius:18px; overflow:hidden;
+    background:rgba(15,23,42,.65); border:2px solid rgba(36,48,65,.6);
+    display:grid; place-items:center;
+    justify-self:center;
+  }
+  .doll img{ width:100%; height:100%; object-fit:cover; display:block }
+
+  .prizesCol{
+    align-self:start;
+    display:grid; gap:12px;
+    max-width:480px; width:200%;
+    justify-items:end;
+    text-align:right;
+  }
+  .prize{
+    background:rgba(14,22,38,.8); border:1px solid rgba(31,42,64,.9);
+    border-radius:12px; padding:8px 10px;
+    display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+    width:100%;
+  }
+  .prize img{ width:120px; height:120px; object-fit:contain; border-radius:8px; justify-self:end }
+  .prize .caption{ font-size:13px; color:#cfe1ff }
+  .prize.win.highlight{ outline:2px solid rgba(34,197,94,.6) }
+  .prize.lose.highlight{ outline:2px solid rgba(239,68,68,.6) }
+
+  .track{
+    height:100%; padding:12px;
+    display:flex; flex-direction:column; gap:12px;
+    align-items:center;
+  }
+  .cell{
+    width:var(--lane-size);
+    flex:1 1 0;
+    border-radius:16px; background:var(--card);
+    border:1px dashed rgba(40,49,68,.9);
+    position:relative; overflow:hidden;
+    display:grid; place-items:center;
+    transition:.25s all;
+  }
+  .cell::after{
+    content: attr(data-label);
+    position:absolute; top:10px; left:12px;
+    font-size:12px; color:#cbd5e1; letter-spacing:.4px; opacity:.9;
+    text-shadow:0 1px 2px rgba(0,0,0,.5);
+  }
+  .cell.active{ border:1px solid var(--blue); box-shadow:0 0 0 2px rgba(59,130,246,.25) inset }
+  .cell.done{ background:rgba(16,32,22,.78); border-color:rgba(26,62,36,.9) }
+  .cell.win{ background:rgba(16,33,22,.85); border-color:rgba(29,77,42,.9); box-shadow:0 0 0 2px rgba(34,197,94,.25) inset }
+
+  .avatar{
+    position:absolute; left:50%; top:50%;
+    transform: translate(-50%, calc(-50% + var(--avatar-shift)));
+    max-width:var(--avatar-scale); max-height:var(--avatar-scale);
+    width:auto; height:auto; object-fit:contain;
+    filter:drop-shadow(0 8px 18px rgba(0,0,0,.45));
+    pointer-events:none;
+  }
+  .cell:not(.active) .avatar{ display:none }
+
+  .failmark{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    max-width:30%; max-height:30%; width:auto; height:auto; object-fit:contain;
+    display:none; filter:drop-shadow(0 6px 14px rgba(0,0,0,.4));
+    pointer-events:none;
+  }
+  .cell.failed .failmark{ display:block }
+
+  .right{
+    border-radius:20px; backdrop-filter:blur(4px);
+    background:var(--panel); border:1px solid rgba(255,255,255,.08);
+    display:flex; flex-direction:column; gap:16px; padding:16px; overflow:auto;
+  }
+  .title{ font-weight:800; font-size:22px; text-shadow:0 1px 2px rgba(0,0,0,.35) }
+  .sysbox{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:rgba(14,22,38,.8); border:1px solid rgba(31,42,64,.9); padding:12px; border-radius:14px }
+  .syscol{ display:grid; gap:4px }
+  .tag{ font-size:12px; color:var(--muted) }
+  .badge{ font-weight:800; font-size:24px; min-width:2ch; text-align:right }
+  .threshold{ font size:12px; color:#b6c1d6 }
+  .meta{ font-size:13px; color:#e2e8f0 }
+  .controls{ display:grid; gap:10px }
+  button{ padding:12px 16px; border-radius:12px; border:1px solid rgba(33,49,74,.9); background:rgba(15,26,44,.9); color:#cfe1ff; font-weight:800; letter-spacing:.3px; cursor:pointer; transition:.2s }
+  button:hover{ transform:translateY(-1px); border-color:#2b4368 }
+  button:disabled{ opacity:.55; cursor:not-allowed; transform:none }
+  .btn1{ outline:2px solid rgba(59,130,246,.15) }
+  .btn2{ outline:2px solid rgba(225,29,72,.15) }
+
+  .msg{ min-height:28px; font-weight:700; text-shadow:0 1px 2px rgba(0,0,0,.35) }
+  .msg.pass{ color:var(--ok) }
+  .msg.fail{ color:#f87171 }
+
+  /* Rules panel */
+  .rules{ display:grid; gap:8px; background:rgba(14,22,38,.8); border:1px solid rgba(31,42,64,.9); padding:12px; border-radius:14px }
+  .rules .rulesTitle{ font-weight:800; font-size:16px }
+  .rules textarea{ width:100%; min-height:450px; resize:vertical; border-radius:10px; border:1px solid rgba(49,69,98,.7); background:rgba(10,18,32,.75); color:#dbeafe; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:18px; line-height:1.4 }
+  .rules .small{ font-size:18px; color:#9fb3d9 }
+  .rules .row{ display:flex; gap:8px; align-items:center; justify-content:space-between }
+
+  @media (max-width:860px){
+    .layout{ grid-template-columns: 1fr; height:auto }
+    .left{ height:90vh }
+    .right{ height:auto }
+  }
+</style>
+</head>
+<body>
+  <div id="flash" class="flash"></div>
+
+  <div class="layout" id="app">
+    <section class="left">
+      <div class="dollWrap">
+        <div class="doll">
+          <img src="/static/images/doll.png" alt="Doll">
+        </div>
+
+        <div class="prizesCol">
+          <div id="prizeWin" class="prize win">
+            <div class="caption">Prize for Win</div>
+            <img src="/static/images/prize10.png" alt="Win prize">
+          </div>
+          <div id="prizeLose" class="prize lose">
+            <div class="caption">Prize for Lose</div>
+            <img src="/static/images/prize1.png" alt="Lose prize">
+          </div>
+        </div>
+      </div>
+
+      <div class="track" id="track" aria-label="Progress track">
+        <div class="cell" data-i="4" data-label="Step 4">
+          <img class="avatar" src="/static/images/character.png" alt="You">
+          <img class="failmark" src="/static/images/x.png" alt="Failed">
+        </div>
+        <div class="cell" data-i="3" data-label="Step 3">
+          <img class="avatar" src="/static/images/character.png" alt="You">
+          <img class="failmark" src="/static/images/x.png" alt="Failed">
+        </div>
+        <div class="cell" data-i="2" data-label="Step 2">
+          <img class="avatar" src="/static/images/character.png" alt="You">
+          <img class="failmark" src="/static/images/x.png" alt="Failed">
+        </div>
+        <div class="cell" data-i="1" data-label="Step 1">
+          <img class="avatar" src="/static/images/character.png" alt="You">
+          <img class="failmark" src="/static/images/x.png" alt="Failed">
+        </div>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div class="title">Squid Game — pick 1 or 2 steps. Reach the Goal to win.</div>
+
+      <div class="sysbox">
+        <div class="syscol">
+          <div class="tag">System Roll</div>
+          <div class="badge" id="sysRoll">—</div>
+        </div>
+        <div class="syscol">
+          <div class="tag">Success Threshold</div>
+          <div class="threshold" id="threshold">Step1 ≤ 66.9 · Step2 ≤ 44.7</div>
+        </div>
+      </div>
+
+      <div class="meta" id="remainingMeta">Remaining: 4</div>
+
+      <div class="controls">
+        <button class="btn1" id="step1">Step 1 (safer)</button>
+        <button class="btn2" id="step2">Step 2 (riskier)</button>
+        <button id="reset">Reset</button>
+        <!-- NEW: go to /flipgame -->
+        <button id="flipBtn" title="Go to the Flip Game">Go to Flip Game</button>
+      </div>
+
+      <div class="msg" id="msg"></div>
+
+      <!-- NEW: Rules & Fairness text area -->
+      <section class="rules" aria-labelledby="rulesTitle">
+        <div class="row">
+          <div class="rulesTitle" id="rulesTitle">Rules & Fairness</div>
+          <small class="small">These values are generated live for each click.</small>
+        </div>
+        <textarea id="rulesText" readonly>
+How to play:
+• 4 tiles to the Goal. you choose to advance 1 step (safer 66.9 %%) or 2 steps (riskier 44.7%%).
+
+Fairness & math:
+• "Step 1" uses p = 0.2^(1/4) ≈ 0.669 (≈ 66.9%).
+• "Step 2" uses p = (0.2)^(1/2) ≈ 0.447 (≈ 44.7%).
+• These probabilities make a full clear roughly 20%.
+        </textarea>
+      </section>
+    </aside>
+  </div>
+
+  <audio id="squidAudio" preload="auto"><source src="/static/sounds/squid-game.mp3" type="audio/mpeg"></audio>
+  <audio id="gunAudio" preload="auto"><source src="/static/sounds/gun.mp3" type="audio/mpeg"></audio>
+  <!-- NEW: win sound -->
+  <audio id="congratsAudio" preload="auto"><source src="/static/sounds/congratulations.mp3" type="audio/mpeg"></audio>
+
+<script>
+  const P1 = Math.pow(0.2, 1/4);
+  const P2 = P1 * P1;
+  const TOTAL = 4;
+
+  let progress = 0, locked = false, finished = false;
+
+  const track = document.getElementById('track');
+  const cells = Array.from(track.querySelectorAll('.cell'));
+  const btn1 = document.getElementById('step1');
+  const btn2 = document.getElementById('step2');
+  const btnReset = document.getElementById('reset');
+  const btnFlip = document.getElementById('flipBtn'); // NEW
+  const msg = document.getElementById('msg');
+  const sysRoll = document.getElementById('sysRoll');
+  const thresholdText = document.getElementById('threshold');
+  const remainingMeta = document.getElementById('remainingMeta');
+  const audioSquid = document.getElementById('squidAudio');
+  const audioGun = document.getElementById('gunAudio');
+  const audioCongrats = document.getElementById('congratsAudio'); // NEW
+  const flash = document.getElementById('flash');
+  const prizeWin = document.getElementById('prizeWin');
+  const prizeLose = document.getElementById('prizeLose');
+
+  thresholdText.textContent = `Step1 ≤ ${(P1*100).toFixed(1)} · Step2 ≤ ${(P2*100).toFixed(1)}`;
+
+  const getCellByIndexK = k => cells.find(c => +c.dataset.i === k);
+
+  function refreshUI(){
+    cells.forEach(c => { c.classList.remove('active','done','win'); });
+    for(let k=1; k<=Math.min(progress, TOTAL); k++){
+      const c = getCellByIndexK(k); if(!c) continue;
+      c.classList.add(k===TOTAL ? 'win' : 'done');
+    }
+    if(!finished && progress < TOTAL){
+      const next = getCellByIndexK(progress+1);
+      if(next) next.classList.add('active');
+    }
+    const remaining = TOTAL - progress;
+    remainingMeta.textContent = `Remaining: ${remaining}`;
+    btn1.disabled = locked || finished || remaining < 1;
+    btn2.disabled = locked || finished || remaining < 2;
+  }
+
+  function flashRed(){ flash.classList.remove('active'); void flash.offsetWidth; flash.classList.add('active'); }
+  function highlightPrize(win){
+    prizeWin.classList.toggle('highlight', !!win);
+    prizeLose.classList.toggle('highlight', !win);
+  }
+
+  function finishRun(win){
+    finished = true;
+    highlightPrize(win);
+    msg.className = 'msg ' + (win ? 'pass' : 'fail');
+    msg.textContent = win ? '🎉 VICTORY!' : 'FAIL ✗';
+    // NEW: play win / stop other audios
+    try{
+      audioSquid.pause();
+      audioSquid.currentTime = 0;
+      if(win){
+        audioGun.pause();
+        audioGun.currentTime = 0;
+        audioCongrats.currentTime = 0;
+        audioCongrats.play();
+      }
+    }catch(e){}
+    refreshUI();
+  }
+
+  function endRound(pass, step){
+    if(pass){
+      progress += step;
+      if(progress > TOTAL) progress = TOTAL;
+      msg.className = 'msg pass';
+      msg.textContent = `PASS ✓ You advanced ${step} step${step===2?'s':''}.`;
+      if(progress === TOTAL) finishRun(true);
+    }else{
+      const target = Math.min(progress + step, TOTAL);
+      const failCell = getCellByIndexK(target);
+      if(failCell) failCell.classList.add('failed');
+      msg.className = 'msg fail';
+      msg.textContent = `FAIL ✗ You fell after choosing step ${step}.`;
+      try{ audioGun.currentTime = 0; audioGun.play(); }catch(e){}
+      flashRed();
+      finishRun(false);
+    }
+    locked = false;
+    if(!finished) refreshUI();
+  }
+
+  function waitForAudioEnd(el, timeoutMs=60000){
+    return new Promise(res => {
+      let done=false;
+      const cleanup=()=>{el.removeEventListener('ended',onEnd); el.removeEventListener('error',onErr); clearTimeout(t)};
+      const onEnd=()=>{ if(!done){ done=true; cleanup(); res(true); } };
+      const onErr=()=>{ if(!done){ done=true; cleanup(); res(false); } };
+      const t=setTimeout(()=>{ if(!done){ done=true; cleanup(); res(false); } }, timeoutMs);
+      el.addEventListener('ended', onEnd, {once:true});
+      el.addEventListener('error', onErr, {once:true});
+    });
+  }
+
+  async function play(step){
+    if(locked || finished) return;
+    const remaining = TOTAL - progress;
+    if((step!==1 && step!==2) || remaining < step) return;
+
+    locked = true;
+    msg.className = 'msg';
+    msg.textContent = 'Playing sound...';
+
+    try{ audioSquid.currentTime = 0; await audioSquid.play(); }catch(e){}
+    await waitForAudioEnd(audioSquid);
+
+    msg.textContent = 'Rolling...';
+    const p = step===1 ? P1 : P2;
+    const raw = Math.random();
+    sysRoll.textContent = Math.floor(raw*100)+1; // show 1..100
+
+    const pass = raw < p;
+    setTimeout(()=>endRound(pass, step), 120);
+    refreshUI();
+  }
+
+  function reset(){
+    progress=0; locked=false; finished=false;
+    msg.textContent=''; msg.className='msg'; sysRoll.textContent='—';
+    highlightPrize(false);
+    cells.forEach(c=>c.classList.remove('failed'));
+    try{
+      [audioSquid,audioGun,audioCongrats].forEach(a=>{ a.pause(); a.currentTime=0; });
+    }catch(e){}
+    refreshUI();
+  }
+
+  // NEW: navigation to /flipgame
+  btnFlip.addEventListener('click', () => {
+    window.location.href = `${location.origin}/flipgame`;
+  });
+
+  document.getElementById('step1').addEventListener('click', ()=>play(1));
+  document.getElementById('step2').addEventListener('click', ()=>play(2));
+  document.getElementById('reset').addEventListener('click', reset);
+
+  refreshUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Full-Screen Prize Wheel</title>
+<style>
+  :root{ --bg:#0b0f1a; --card:#111827; --muted:#9ca3af; }
+  *{ box-sizing:border-box }
+  html,body{ height:100%; margin:0; }
+  body{ background:var(--bg); color:#e5e7eb; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .app{ width:100vw; height:100vh; display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:16px; padding:16px; }
+  .stage{ position:relative; overflow:hidden; border-radius:20px; border:1px solid #1f2937; background:linear-gradient(180deg,#0e141f,#0a0f18); }
+  #wheel{ width:100%; height:100%; display:block; }
+  .arrow{ position:absolute; top:54px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:22px solid transparent; border-right:22px solid transparent; border-bottom:34px solid #facc15; filter:drop-shadow(0 2px 2px rgba(0,0,0,.6)); z-index:3; }
+  .prize-label{ position:absolute; top:8px; left:50%; transform:translateX(-50%); font-size:42px; font-weight:900; letter-spacing:.06em; color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.6); z-index:2; user-select:none; }
+  .hub{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:94px; height:94px; border-radius:50%; background:#1f2937; border:6px solid #374151; display:grid; place-items:center; font-weight:800; z-index:1; }
+
+  /* SIDE PANEL */
+  .side{ background:var(--card); border:1px solid #1f2937; border-radius:20px; padding:16px; display:flex; flex-direction:column; min-height:0; }
+  .side h2{ margin:.5rem 0 .75rem 0; font-size:1.1rem; color:#fff }
+  .row{ display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .btn{ appearance:none; border:none; cursor:pointer; border-radius:14px; padding:14px 18px; font-weight:800; background:linear-gradient(90deg,#06b6d4,#60a5fa); color:#031b26; letter-spacing:.03em; }
+  .btn:disabled{ filter:grayscale(.5) brightness(.8); cursor:not-allowed }
+  .legend{ margin-top:auto; font-size:.9rem; color:var(--muted); line-height:1.35; }
+
+  /* RED FLASH + JACKPOT OVERLAY */
+  .flash{ position:fixed; inset:0; background:rgba(255,0,0,.85); display:none; z-index:99; animation:blink .5s step-end infinite; }
+  @keyframes blink{ 50%{ opacity:.3 } }
+  .jackpot-img{
+    position:fixed; inset:0; margin:auto; width:min(42vw, 42vh); max-width:640px; max-height:640px;
+    z-index:101; filter: drop-shadow(0 12px 30px rgba(0,0,0,.6)); transform: scale(0.85);
+    animation: popIn .25s ease-out forwards; pointer-events:none;
+  }
+  @keyframes popIn{ to { transform: scale(1); } }
+
+  /* >>> NEW: vertical hits gallery inside the wheel box <<< */
+  .hits-vert{
+    position:absolute;
+    top:50%;
+    right:10px;
+    transform:translateY(-50%);
+    width:120px;                 /* overall rail width */
+    max-height:calc(100% - 120px);
+    padding:10px;
+    border-radius:16px;
+    background:rgba(15,23,42,0.80);
+    border:1px solid #1f2937;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    overflow:auto;
+    z-index:4;                   /* above canvas/arrow */
+    backdrop-filter: blur(4px);
+  }
+  .hits-vert h3{
+    margin:0 0 6px 0;
+    font-size:.9rem;
+    color:#cbd5e1;
+    text-align:center;
+    font-weight:700;
+  }
+  .hits-vert img{
+    width:100%;                  /* fill rail width */
+    height:auto;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:12px;
+    border:1px solid #334155;
+    background:#0b1220;
+  }
+
+  @media (max-width: 900px){
+    .app{ grid-template-columns:1fr; grid-auto-rows:1fr auto; }
+    .side{ min-height:280px }
+    .hits-vert{ width:92px; right:8px; padding:8px; gap:8px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="stage" id="stage">
+      <div class="prize-label">PRIZE</div>
+      <div class="arrow" aria-hidden="true"></div>
+      <canvas id="wheel" aria-label="Prize wheel"></canvas>
+      <div class="hub">SPIN</div>
+
+      <!-- >>> MOVED: Hits rail into the stage and made it vertical/bigger -->
+      <div id="hits" class="hits-vert" aria-live="polite" aria-label="Hits on 1 / 2 / 3">
+        <h3>Hits 1/2/3</h3>
+        <!-- badges appended here -->
+      </div>
+    </div>
+
+    <aside class="side">
+      <h2>Controls</h2>
+      <div class="row">
+        <button id="runBtn" class="btn">Run ▶</button>
+        <button id="flipBtn" class="btn" title="Go to /flip on this server">Go back to mystery pack ↻</button>
+        <div id="status" style="color:#9ca3af; font-variant-numeric:tabular-nums">Ready</div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="flash" class="flash"></div>
+
+<script>
+(() => {
+  // ================== Settings ==================
+  const NUM = 10;
+  const RESHUFFLE_ON_RUN = false;     // set true if you want a new visual order each manual Run
+  const DEBUG = false;                // set true to log picks to console
+
+  // ================== Assets ====================
+  const sliceColors = ["#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#22c55e","#f97316","#a855f7","#14b8a6","#eab308"];
+
+  // Audio
+  const sfxLaunch  = new Audio('/static/sounds/prize3.mp3'); sfxLaunch.preload  = 'auto'; sfxLaunch.volume  = 0.9;
+  const sfxPrize   = new Audio('/static/sounds/prize1.mp3'); sfxPrize.preload   = 'auto'; sfxPrize.volume   = 0.9;
+  const sfxJackpot = new Audio('/static/sounds/prize2.mp3'); sfxJackpot.preload = 'auto'; sfxJackpot.volume = 1.0;
+
+  function playLaunch(){ try{ sfxLaunch.currentTime = 0; sfxLaunch.play(); }catch(e){} }
+  function playPrizeHit(){ try{ sfxPrize.currentTime = 0; sfxPrize.play(); }catch(e){} }
+  function playJackpot5s(){
+    try{
+      sfxJackpot.currentTime = 0; sfxJackpot.play();
+      setTimeout(()=>{ try{ sfxJackpot.pause(); sfxJackpot.currentTime = 0; }catch(e){} }, 5000);
+    }catch(e){}
+  }
+
+  // Preload images prize1..prize10
+  const imgsByPrize = {};
+  for(let p=1;p<=NUM;p++){
+    const im = new Image();
+    im.src = `/static/images/prize${p}.png`;
+    imgsByPrize[p] = im;
+  }
+
+  // ================== Canvas ====================
+  const canvas = document.getElementById('wheel');
+  const stage = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+
+  let R = 0, cx = 0, cy = 0;
+  function resizeCanvas(){
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = stage.getBoundingClientRect();
+    const cssW = Math.max(200, rect.width);
+    const cssH = Math.max(200, rect.height);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R = Math.min(cssW, cssH) * 0.45;
+    cx = cssW/2; cy = cssH/2;
+    draw(currentAngle);
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  // ================== Wheel Model ===============
+  const prizes = Array.from({length:NUM}, (_,i)=>i+1);
+  shuffleInPlace(prizes); // randomize order for this page load
+
+  // ================== Drawing ===================
+  function draw(angle){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    const step = (Math.PI*2)/NUM;
+
+    for(let i=0;i<NUM;i++){
+      const prizeNo = prizes[i];
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.arc(0,0,R, i*step, (i+1)*step);
+      ctx.closePath();
+      ctx.fillStyle = sliceColors[i % sliceColors.length];
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(0,0,0,.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      const mid = i*step + step/2;
+      const img = imgsByPrize[prizeNo];
+      const imgSize = R*0.32;
+      const radial = R*0.62;
+
+      ctx.save();
+      ctx.rotate(mid);
+      ctx.translate(radial, 0);
+      ctx.beginPath();
+      ctx.arc(0,0,imgSize*0.62,0,Math.PI*2);
+      ctx.fillStyle = "rgba(255,255,255,.95)";
+      ctx.fill();
+
+      if(img && img.complete){
+        ctx.drawImage(img, -imgSize/2, -imgSize/2, imgSize, imgSize);
+      }else{
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(-imgSize/2, -imgSize/2, imgSize, imgSize);
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // ================== Spin Mechanics ============
+  const runBtn   = document.getElementById('runBtn');
+  const flipBtn  = document.getElementById('flipBtn');
+  const statusEl = document.getElementById('status');
+  const hitsEl   = document.getElementById('hits');
+  const flashEl  = document.getElementById('flash');
+
+  let isSpinning = false;
+  let spinsSoFar = 0;
+  let currentAngle = -Math.PI/2; // arrow at top
+  let rafId = null;
+
+  const easeOutCubic = (t)=>1 - Math.pow(1 - t, 3);
+
+  function angleForIndex(index1to10){
+    const step = (Math.PI*2)/NUM;
+    const zeroAtTop = -Math.PI/2;
+    const sliceCenter = (index1to10-1)*step + step/2;
+    return zeroAtTop - sliceCenter;
+  }
+
+  // Crypto-backed uniform integer in [a,b]
+  function randIntCrypto(a,b){
+    const range = b - a + 1;
+    const buf = new Uint32Array(1);
+    if (window.crypto && window.crypto.getRandomValues){
+      const max = 0xFFFFFFFF;
+      const limit = Math.floor(max / range) * range;
+      do { window.crypto.getRandomValues(buf); } while (buf[0] > limit);
+      return a + (buf[0] % range);
+    }
+    // fallback
+    return Math.floor(Math.random()*range) + a;
+  }
+
+  function spinOnce(onDone){
+    isSpinning = true;
+    runBtn.disabled = true;
+    statusEl.textContent = "Spinning...";
+
+    // Choose the PRIZE uniformly (independent per spin), then align the slice that currently holds it
+    const randomPrize = randIntCrypto(1, NUM);
+    const targetSliceIndex = prizes.indexOf(randomPrize) + 1; // 1..NUM
+
+    const targetAngleBase  = angleForIndex(targetSliceIndex);
+    const extraTurns = randIntCrypto(5,7);
+    const start = performance.now();
+    const duration = randIntCrypto(2800, 3600);
+    const startAngle = currentAngle;
+    const TAU = Math.PI*2;
+
+    let deltaToTarget = ((targetAngleBase - startAngle) % TAU + TAU) % TAU;
+    const finalAngle = startAngle + deltaToTarget + extraTurns*TAU;
+
+    function frame(now){
+      const t = Math.min(1, (now - start)/duration);
+      const eased = easeOutCubic(t);
+      currentAngle = startAngle + (finalAngle - startAngle)*eased;
+      draw(currentAngle);
+      if(t < 1){
+        rafId = requestAnimationFrame(frame);
+      }else{
+        cancelAnimationFrame(rafId);
+        currentAngle = ((currentAngle % TAU)+TAU)%TAU;
+        draw(currentAngle);
+        isSpinning = false;
+        if (DEBUG) console.log("Slice:", targetSliceIndex, "Prize:", randomPrize);
+        onDone(randomPrize);
+      }
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function addHitBadge(prizeNo){
+    const im = document.createElement('img');
+    im.src = `/static/images/prize${prizeNo}.png`;
+    im.alt = `Prize ${prizeNo}`;
+    hitsEl.appendChild(im);
+  }
+
+  function flashRed(){
+    flashEl.style.display = 'block';
+    setTimeout(()=>{ flashEl.style.display = 'none'; }, 5000);
+  }
+
+  // Draw big prize10 on canvas for 5s (fallback to DOM if image not ready)
+  function showBigJackpot(){
+    const DUR = 5000;
+    const img = imgsByPrize[10];
+
+    if (!img || !img.complete){
+      // Fallback DOM overlay
+      const big = document.createElement('img');
+      big.className = 'jackpot-img';
+      big.src = '/static/images/prize10.png';
+      big.alt = 'Jackpot Prize 10';
+      document.body.appendChild(big);
+      setTimeout(()=>{ big.remove(); }, DUR);
+      return;
+    }
+
+    const start = performance.now();
+    const maxSize = Math.min(640, Math.min(canvas.width, canvas.height));
+    const baseSize = Math.min(R * 1.25, maxSize);
+
+    function frame(now){
+      const elapsed = now - start;
+      if (elapsed < DUR){
+        // redraw current frame then overlay big image
+        draw(currentAngle);
+        ctx.save();
+        ctx.translate(cx, cy);
+        const pulse = 1 + 0.035 * Math.sin(elapsed / 120);
+        const size = baseSize * pulse;
+        ctx.drawImage(img, -size/2, -size/2, size, size);
+        ctx.restore();
+        requestAnimationFrame(frame);
+      } else {
+        draw(currentAngle);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function runSequence(){
+    if(isSpinning) return;
+    playLaunch();
+    spinsSoFar = 0;
+    hitsEl.innerHTML = ''; // clear the rail each run
+
+    if (RESHUFFLE_ON_RUN){
+      shuffleInPlace(prizes);
+      draw(currentAngle);
+    }
+
+    doSpin();
+  }
+
+  function doSpin(){
+    spinsSoFar++;
+    spinOnce((landedPrize)=>{
+      statusEl.textContent = `Stopped at: ${landedPrize}`;
+
+      if([1,2,3].includes(landedPrize)){
+        addHitBadge(landedPrize);
+        playPrizeHit();
+        if(spinsSoFar < 3){
+          playLaunch();
+          setTimeout(()=>{ doSpin(); }, 600);
+          return;
+        }
+      }
+
+      if(landedPrize === 10){
+        flashRed();
+        showBigJackpot();
+        playJackpot5s();
+      }
+
+      runBtn.disabled = false;
+    });
+  }
+
+  runBtn.addEventListener('click', runSequence);
+
+  // >>> NEW: Flip Page button to same server at /flip
+  flipBtn.addEventListener('click', () => {
+    // Use origin to ensure “same server”, root path /flip
+    window.location.href = `${location.origin}/flipgame`;
+  });
+
+  // ================== Boot ======================
+  resizeCanvas();
+  // redraw when any image loads the first time
+  for (let p=1;p<=NUM;p++){
+    if (imgsByPrize[p]) imgsByPrize[p].addEventListener('load', ()=>draw(currentAngle), { once:true });
+  }
+
+  // ================== Utils =====================
+  function shuffleInPlace(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+})();
+</script>
+</body>
+</html>
