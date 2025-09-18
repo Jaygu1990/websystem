@@ -867,6 +867,11 @@ def flip_game4():
     """Serve the game page"""
     return render_template('flip4.html')
 
+@app.route('/flipgame5')
+def flip_game5():
+    """Serve the game page"""
+    return render_template('flip5.html')
+
 
 @app.route('/get-state')
 def flip_get_state():
