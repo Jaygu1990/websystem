@@ -10,6 +10,50 @@
     th { background-color:#f2f2f2; }
     .done-btn { background-color:transparent; color:black; border:none; padding:5px 10px; cursor:pointer; }
     .done-mark { font-size:20px; color:green; }
+
+    /* ====== Config panel styling (non-invasive) ====== */
+    .config-card{
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      background: #f7f7fb;
+      color: #111827;
+      max-width: 720px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .config-row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .config-title{ font-weight:700; font-size:16px; }
+    .config-subtitle{ font-size:13px; color:#4b5563; margin-top:4px; }
+
+    .config-actions{
+      margin-top:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .config-actions button{
+      background:#111827; color:#e5e7eb; border:1px solid #1f2937;
+      border-radius:999px; padding:8px 14px; font-weight:600; font-size:14px; cursor:pointer;
+    }
+    .config-actions button:hover{ background:#0b1220 }
+    .status-badge{
+      margin-left:6px; padding:4px 8px; border-radius:999px;
+      background:#0b1220; border:1px solid #1f2937; font-size:12px; color:#e5e7eb;
+    }
+
+    /* Toggle switch */
+    .switch{ position:relative; display:inline-block; width:54px; height:30px; }
+    .switch input{ display:none; }
+    .slider{
+      position:absolute; inset:0; cursor:pointer; background:#9ca3af; border-radius:999px; transition:.2s; border:1px solid #6b7280;
+    }
+    .slider:before{
+      content:""; position:absolute; height:22px; width:22px; left:4px; top:3px; background:#fff; border-radius:50%; transition:.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    }
+    .switch input:checked + .slider{ background:#065f46; border-color:#065f46; }
+    .switch input:checked + .slider:before{ transform: translateX(24px); }
+    /* ====== /Config panel styling ====== */
   </style>
 </head>
 <body>
@@ -24,6 +68,23 @@
     <button id="Preorder" onclick="clearPreorder()">Clear Pre Order</button>
     <button id="Add" onclick="addCount()">Add Count</button>
     <button id="Minus" onclick="minusCount()">Minus Count</button>
+  </div>
+
+  <!-- Config Panel for /api/pokeball_config -->
+  <div id="pokeball-config" class="config-card">
+    <div class="config-row">
+      <div>
+        <div class="config-title">Gate  1</div>
+      </div>
+      <label class="switch" title="Toggle gate_id1_last10">
+        <input type="checkbox" id="pkcfg_gateToggle"/>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="config-actions">
+      <button id="pkcfg_btnRefresh" type="button">Refresh</button>
+      <span id="pkcfg_status" class="status-badge">…</span>
+    </div>
   </div>
 
   <table id="queue-table">
@@ -90,12 +151,77 @@
     function Energy(){ fetch('/start-slot-machine',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     function clearPreorder(){ fetch('/clear_preorderqueue',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     function minusCount(){ fetch('/minus_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    
     // ✅ New addCount function
     function addCount(){ fetch('/add_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
 
     setInterval(fetchQueue,3000);
+
+    /* ====== Minimal config panel logic ====== */
+    const PKCFG = {
+      elToggle:  document.getElementById('pkcfg_gateToggle'),
+      elStatus:  document.getElementById('pkcfg_status'),
+      btnRef:    document.getElementById('pkcfg_btnRefresh'),
+
+      setStatus(msg, good=true){
+        this.elStatus.textContent = msg;
+        this.elStatus.style.background = good ? '#065f46' : '#7f1d1d';
+        this.elStatus.style.borderColor = good ? '#065f46' : '#991b1b';
+        this.elStatus.style.color = '#fff';
+      },
+
+      async getConfig(){
+        const r = await fetch('/api/pokeball_config', {cache:'no-store'});
+        if(!r.ok) throw new Error('GET config failed');
+        return r.json();
+      },
+      async setGate(enabled){
+        const r = await fetch('/api/pokeball_config', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ gate_id1_last10: !!enabled })
+        });
+        if(!r.ok) throw new Error('POST config failed');
+        return r.json();
+      },
+
+      async refresh(){
+        try{
+          this.setStatus('Loading…');
+          const cfg = await this.getConfig();
+          const on = !!cfg.gate_id1_last10;
+          this.elToggle.checked = on;
+          this.setStatus(on ? 'Gate: ON' : 'Gate: OFF', true);
+        }catch(e){
+          console.error(e);
+          this.setStatus('Load failed', false);
+        }
+      },
+
+      async applyToggle(){
+        try{
+          this.setStatus('Updating…');
+          const cfg = await this.setGate(this.elToggle.checked);
+          const on = !!cfg.gate_id1_last10;
+          this.elToggle.checked = on; // reflect server state
+          this.setStatus(on ? 'Gate: ON' : 'Gate: OFF', true);
+        }catch(e){
+          console.error(e);
+          this.setStatus('Update failed', false);
+          // revert to server truth
+          this.refresh();
+        }
+      },
+
+      init(){
+        this.btnRef.addEventListener('click', ()=>this.refresh());
+        this.elToggle.addEventListener('change', ()=>this.applyToggle());
+        // initial
+        this.refresh();
+      }
+    };
+
+    // Initialize config panel without touching existing logic
+    PKCFG.init();
   </script>
 </body>
 </html>
-

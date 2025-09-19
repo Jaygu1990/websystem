@@ -11,7 +11,7 @@ import time
 import threading
 from threading import Thread
 from random import shuffle
-
+from pathlib import Path
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
 
@@ -867,11 +867,143 @@ def flip_game4():
     """Serve the game page"""
     return render_template('flip4.html')
 
+
+
+# ==================================== Card Show Game
 @app.route('/flipgame5')
 def flip_game5():
     """Serve the game page"""
     return render_template('flip5.html')
 
+POKEBALL_STATE_FILE = Path("pokeball_prizes.json")
+POKEBALL_CONFIG_FILE = Path("pokeball_config.json")
+
+# ---- Config with a "trigger" to gate id=1 until last 10 non-bonus draws ----
+DEFAULT_CONFIG = {
+    # When True: id=1 is excluded from draws until non-bonus remaining <= 10
+    "gate_id1_last10": True
+}
+
+def config_load():
+    if POKEBALL_CONFIG_FILE.exists():
+        return json.loads(POKEBALL_CONFIG_FILE.read_text(encoding="utf-8"))
+    POKEBALL_CONFIG_FILE.write_text(json.dumps(DEFAULT_CONFIG, indent=2), encoding="utf-8")
+    return DEFAULT_CONFIG.copy()
+
+def config_save(cfg):
+    POKEBALL_CONFIG_FILE.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+# Optional: endpoints to view/update the trigger
+@app.route("/api/pokeball_config", methods=["GET", "POST"])
+def pokeball_config():
+    if request.method == "GET":
+        return jsonify(config_load())
+    # POST: accept {"gate_id1_last10": true/false}
+    try:
+        body = request.get_json(force=True, silent=True) or {}
+        cfg = config_load()
+        if "gate_id1_last10" in body:
+            cfg["gate_id1_last10"] = bool(body["gate_id1_last10"])
+        config_save(cfg)
+        return jsonify(cfg)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# ---- Prize state ----
+DEFAULT_PRIZES = [
+    {"id": 1,  "name": "Prize 1",  "img": "cardshow/pokeball_p1.png",  "count": 1},
+    {"id": 2,  "name": "Prize 2",  "img": "cardshow/pokeball_p2.png",  "count": 1},
+    {"id": 3,  "name": "Prize 3",  "img": "cardshow/pokeball_p3.png",  "count": 1},
+    {"id": 4,  "name": "Prize 4",  "img": "cardshow/pokeball_p4.png",  "count": 1},
+    {"id": 5,  "name": "Prize 5",  "img": "cardshow/pokeball_p5.png",  "count": 1},
+    {"id": 6,  "name": "Prize 6",  "img": "cardshow/pokeball_p6.png",  "count": 1},
+    {"id": 7,  "name": "Prize 7",  "img": "cardshow/pokeball_p7.png",  "count": 1},
+    {"id": 8,  "name": "Prize 8",  "img": "cardshow/pokeball_p8.png",  "count": 1},
+    {"id": 9,  "name": "Prize 9",  "img": "cardshow/pokeball_p9.png",  "count": 1},
+    {"id": 10, "name": "Prize 10", "img": "cardshow/pokeball_p10.png", "count": 1},
+    {"id": 11, "name": "Prize 11", "img": "cardshow/pokeball_p11.png", "count": 1},
+    {"id": 12, "name": "Prize 12", "img": "cardshow/pokeball_p12.png", "count": 1},
+    {"id": 13, "name": "Prize 13", "img": "cardshow/pokeball_p13.png", "count": 1},
+    {"id": 14, "name": "BONUS!",   "img": "cardshow/bonus.png",        "count": 5},
+]
+
+def pokeball_load():
+    if POKEBALL_STATE_FILE.exists():
+        return json.loads(POKEBALL_STATE_FILE.read_text(encoding="utf-8"))
+    data = {"prizes": DEFAULT_PRIZES}
+    POKEBALL_STATE_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return data
+
+def pokeball_save(data):
+    POKEBALL_STATE_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+def pokeball_total(prizes):
+    return sum(p["count"] for p in prizes)
+
+def non_bonus_total(prizes):
+    """Total remaining draws excluding BONUS (id 14)."""
+    return sum(p["count"] for p in prizes if p["id"] != 14)
+
+@app.route("/api/pokeball_state")
+def pokeball_state():
+    data = pokeball_load()
+    return jsonify({"prizes": data["prizes"], "total": pokeball_total(data["prizes"])})
+
+@app.route("/api/pokeball_draw", methods=["POST"])
+def pokeball_draw():
+    data = pokeball_load()
+    prizes = data["prizes"]
+    cfg = config_load()
+
+    pool = pokeball_total(prizes)
+    if pool <= 0:
+        return jsonify({"error": "Pool is empty"}), 400
+
+    # Determine if id=1 should be gated
+    nb_left = non_bonus_total(prizes)  # non-bonus remaining
+    gate_id1 = bool(cfg.get("gate_id1_last10", True)) and (nb_left > 10)
+
+    # Build the bag with optional gate for id=1
+    bag = []
+    for p in prizes:
+        count = p["count"]
+        if count <= 0:
+            continue
+        # If gating is active AND this is id=1 AND we are NOT in last 10 non-bonus, exclude it
+        if gate_id1 and p["id"] == 1:
+            continue
+        bag.extend([p["id"]] * count)
+
+    # Safety check: if gating accidentally removed all non-zero entries (shouldn't happen often),
+    # fall back to all available prizes to avoid an empty bag edge case.
+    if not bag:
+        for p in prizes:
+            bag.extend([p["id"]] * max(0, p["count"]))
+
+        if not bag:
+            return jsonify({"error": "Pool is empty"}), 400
+
+    chosen_id = random.choice(bag)
+
+    # Decrement the chosen prize
+    chosen = None
+    for p in prizes:
+        if p["id"] == chosen_id:
+            p["count"] -= 1
+            chosen = p
+            break
+
+    pokeball_save(data)
+    return jsonify({"chosen": chosen, "prizes": prizes, "total": pokeball_total(prizes)})
+
+@app.route("/api/pokeball_reset", methods=["POST"])
+def pokeball_reset():
+    POKEBALL_STATE_FILE.unlink(missing_ok=True)
+    pokeball_save({"prizes": DEFAULT_PRIZES})
+    return jsonify({"ok": True})
+
+
+# ====================================
 
 @app.route('/get-state')
 def flip_get_state():

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pokeball Prize Game</title>
+
+<!-- Preload heavy assets -->
+<link rel="preload" as="image" href="/static/images/cardshow/background.gif"/>
+<link rel="preload" as="image" href="/static/images/cardshow/pokeball_open.gif"/>
+<link rel="preload" as="image" href="/static/images/cardshow/pikachu.gif"/>
+<link rel="preload" as="audio" href="/static/sounds/prize3.mp3"/>
+<link rel="preload" as="audio" href="/static/sounds/caughtpokemon.mp3"/>
+<link rel="preload" as="audio" href="/static/sounds/prize1.mp3"/>
+<link rel="preload" as="audio" href="/static/sounds/cheering.mp3"/>
+
+<style>
+  :root{ --text:#e5e7eb; --muted:#9ca3af; --ring:#334155; }
+  *{ box-sizing:border-box; margin:0; padding:0 }
+  html,body{ height:100%; }
+
+  body{
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 20% -10%, rgba(59,130,246,.06), transparent 60%),
+      radial-gradient(1000px 700px at 120% 110%, rgba(16,185,129,.06), transparent 60%),
+      url('/static/images/cardshow/background.gif') center/cover no-repeat fixed;
+  }
+
+  .app{
+    height:100%;
+    display:grid;
+    gap:clamp(12px, 1.6vw, 18px);
+    padding:clamp(10px, 1.8vw, 18px);
+    grid-template-columns:
+      clamp(260px, 22vw, 360px)
+      minmax(520px, 1fr)
+      clamp(280px, 20vw, 360px);
+  }
+
+  /* LEFT — vertical-fit */
+  .left{
+    display:flex;
+    flex-direction:column;
+    border:1px solid #1f2937;
+    border-radius:16px;
+    background:rgba(3,7,18,.55);
+    backdrop-filter: blur(2px);
+    padding:clamp(8px, 1.2vw, 14px);
+    max-height:100%;
+  }
+  .left h2{
+    flex:0 0 auto;
+    margin-bottom:clamp(6px, 1vh, 10px);
+    font-size:clamp(16px, 2.2vh, 18px);
+    color:#cbd5e1;
+  }
+  #prizeList{ flex:1 1 auto; overflow:auto; }
+
+  .prize-row{
+    display:grid;
+    grid-template-columns: clamp(54px, 7vh, 72px) 1fr auto;
+    align-items:center;
+    gap: clamp(8px, 1.4vh, 12px);
+    padding: clamp(6px, 1.2vh, 10px);
+    border-radius:12px;
+  }
+  .prize-row:nth-child(odd){ background:rgba(255,255,255,.03) }
+  .prize-row img{
+    width: clamp(50px, 6.8vh, 72px);
+    height: clamp(50px, 6.8vh, 72px);
+    object-fit:contain;
+  }
+  .prize-name{
+    font-weight:700;
+    font-size: clamp(14px, 2.2vh, 18px);
+    line-height:1.2;
+  }
+  .prize-count{
+    color:#93c5fd;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(13px, 2vh, 17px);
+  }
+  @media (max-height: 800px){
+    .prize-row{
+      grid-template-columns: clamp(48px, 6.2vh, 64px) 1fr auto;
+      gap: clamp(6px, 1.1vh, 10px);
+      padding: clamp(4px, 1vh, 8px);
+    }
+    .prize-row img{
+      width: clamp(44px, 5.8vh, 60px);
+      height: clamp(44px, 5.8vh, 60px);
+    }
+    .prize-name{ font-size: clamp(13px, 2vh, 16px); }
+    .prize-count{ font-size: clamp(12px, 1.8vh, 15px); }
+  }
+  @media (max-height: 650px){
+    .left h2{ font-size: clamp(14px, 2vh, 16px); }
+    .prize-row{ gap: clamp(4px, 0.9vh, 8px); padding: clamp(3px, 0.8vh, 6px); }
+  }
+
+  /* MIDDLE (rain stage) */
+  .middle{
+    position:relative;
+    border:1px solid #1f2937; border-radius:20px;
+    background: rgba(3,7,18,.55);
+    backdrop-filter: blur(2px);
+    overflow:hidden; display:grid; place-items:center;
+  }
+  .rain{ position:absolute; inset:0; pointer-events:none; z-index:3; }
+
+  .box{
+    width:clamp(420px, 68vmin, 760px);
+    height:clamp(420px, 68vmin, 760px);
+    border-radius:24px;
+    background: rgba(3,7,18,.60);
+    backdrop-filter: blur(2px);
+    border:3px solid var(--ring);
+    display:grid; place-items:center;
+    position:relative;
+    z-index:2;
+  }
+
+  /* Bonus thumbnails strip */
+  .bonus-strip{
+    position:absolute;
+    bottom:12px; left:50%; transform:translateX(-50%);
+    display:none; gap:8px; align-items:center; justify-content:center;
+    padding:6px 8px;
+    background:rgba(0,0,0,.25);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:12px;
+    z-index:5;
+  }
+  .bonus-strip img{
+    width:48px; height:48px; object-fit:contain;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,.45));
+  }
+
+  /* Overlay for GIF/prize */
+  .display{
+    position:absolute; inset:0; display:grid; place-items:center;
+    z-index:6;
+  }
+  .display img.prize{ width:70%; height:70%; object-fit:contain; margin-top:-10%; }
+  .display img.gif{
+    width:120%;
+    height:120%;
+    object-fit:contain;
+    margin-top:-25%;
+  }
+
+  /* Celebration layer (full-screen) */
+  .celebrate-layer{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:999;
+    overflow:hidden;
+  }
+  .runner{
+    position:absolute; top:0; left:-140px;
+    width: clamp(40px, 7vmin, 96px);
+    height:auto;
+    will-change: left, transform;
+    animation-name: dash, bob;
+    animation-timing-function: linear, ease-in-out;
+    animation-iteration-count: 1, infinite;
+  }
+  @keyframes dash{
+    0%   { left:-140px; }
+    100% { left: calc(100vw + 140px); }
+  }
+  @keyframes bob{
+    0% { transform: translateY(0); }
+    50%{ transform: translateY(-8px); }
+    100%{ transform: translateY(0); }
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .runner{ animation: none !important; }
+  }
+
+  .hidden{ display:none!important }
+
+  /* Balls */
+  .ball{
+    position:absolute; top:-64px;
+    width:36px; height:36px;
+    object-fit:contain; opacity:.95;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,.45));
+    animation: fall var(--dur,1.15s) linear forwards;
+    will-change: top, transform, opacity;
+  }
+  @keyframes fall{
+    0%   { top:-64px; transform: translateX(0) rotate(0) scale(var(--sc,1)); opacity:0 }
+    8%   { opacity:1 }
+    70%  { top:70%;   transform: translateX(var(--dx,0)) rotate(360deg) scale(var(--sc,1)) }
+    100% { top: calc(100% + 72px); transform: translateX(var(--dx,0)) rotate(760deg) scale(var(--sc,1)); opacity:.25 }
+  }
+
+  /* RIGHT */
+  .right{
+    border:1px solid #1f2937; border-radius:16px;
+    background:rgba(3,7,18,.55); backdrop-filter: blur(2px);
+    padding:16px; display:flex; flex-direction:column;
+    gap:16px; align-items:center; justify-content:center;
+  }
+  .oval{
+    width:clamp(200px, 22vw, 260px);
+    height:clamp(110px, 12vw, 140px);
+    border:3px solid var(--ring); border-radius:999px;
+    display:grid; place-items:center;
+    background: radial-gradient(ellipse at 50% 45%, #0f172a, #0b1220 60%);
+    font-size:clamp(28px, 4vw, 40px); font-weight:800; color:#a7f3d0;
+  }
+  button{
+    background:#111827; color:#e5e7eb; border:1px solid #1f2937;
+    border-radius:999px; padding:12px 20px; font-weight:700; font-size:16px;
+    cursor:pointer; transition:.15s;
+  }
+  button:hover{ background:#0b1220 }
+  button:active{ transform:translateY(1px) }
+  button:disabled{ opacity:.55; cursor:not-allowed }
+  .hint{ color:#9ca3af; font-size:12px; text-align:center }
+
+  @media (max-width: 1100px){
+    .app{ grid-template-columns:1fr; height:auto }
+    .middle{ min-height:70vh }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- LEFT -->
+  <section class="left">
+    <h2>Prizes (x <span id="total">0</span>)</h2>
+    <div id="prizeList"></div>
+  </section>
+
+  <!-- MIDDLE -->
+  <section class="middle" id="stage">
+    <div class="rain" id="rain"></div>
+    <div class="box">
+      <div class="display hidden" id="displayLayer">
+        <img id="displayImg" alt="reveal"/>
+      </div>
+      <!-- bonus thumbnails (accumulate across auto-reruns) -->
+      <div id="bonusStrip" class="bonus-strip"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <aside class="right">
+    <div class="oval"><span id="pool">0</span></div>
+    <button id="runBtn">Run ➜ Draw</button>
+    <button id="resetBtn">Reset (dev)</button>
+  </aside>
+</div>
+
+<!-- Full-screen celebration layer -->
+<div id="celebrate" class="celebrate-layer"></div>
+
+<script>
+/* ========= API ========= */
+const API={
+  state:()=>fetch('/api/pokeball_state').then(r=>r.json()),
+  draw: ()=>fetch('/api/pokeball_draw',{method:'POST'}).then(r=>r.json()),
+  reset:()=>fetch('/api/pokeball_reset',{method:'POST'}).then(r=>r.json())
+};
+
+/* ========= DOM ========= */
+const prizeListEl=document.getElementById('prizeList');
+const totalEl=document.getElementById('total');
+const poolEl=document.getElementById('pool');
+const runBtn=document.getElementById('runBtn');
+const resetBtn=document.getElementById('resetBtn');
+
+const stage=document.getElementById('stage');
+const rainLayer=document.getElementById('rain');
+const displayLayer=document.getElementById('displayLayer');
+const displayImg=document.getElementById('displayImg');
+const bonusStrip=document.getElementById('bonusStrip');
+const celebrateLayer=document.getElementById('celebrate');
+
+/* ========= State ========= */
+let running=false;
+let ballTimer=null;
+let ballsAlive=0;
+
+/* Bonus thumbnails for the current bonus chain (front-end only) */
+let bonusHits=[];
+
+/* Tracks whether we're in an auto-rerun bonus chain */
+let autoChain=false;
+
+/* Sound effects */
+const fallSfx   = new Audio('/static/sounds/prize3.mp3'); fallSfx.loop=true; fallSfx.volume=0.6;
+const caughtSfx = new Audio('/static/sounds/caughtpokemon.mp3'); caughtSfx.volume=0.8;
+const bonusSfx  = new Audio('/static/sounds/prize1.mp3'); bonusSfx.volume=0.9;
+const cheerSfx  = new Audio('/static/sounds/cheering.mp3');    cheerSfx.volume=0.9;
+
+/* Assets */
+const PIKACHU_GIF='/static/images/cardshow/pikachu.gif';
+
+/* ========= Ball image detection ========= */
+const BALL_CANDIDATES=[
+  '/static/images/cardshow/pokeball.png',
+  '/static/images/cardshow/pokeball_ball.png',
+  '/static/images/pokeball.png',
+  '/static/images/cardshow/pokeball_ball.webp'
+];
+let BALL_IMG=null;
+
+/* ========= UI ========= */
+function rowTpl(p){
+  return `<div class="prize-row">
+    <img src="/static/images/${p.img}" alt="${p.name}"/>
+    <div class="prize-name">${p.name}</div>
+    <div class="prize-count">x <span>${p.count}</span></div>
+  </div>`;
+}
+// only non-bonus (exclude id 14)
+function nonBonusTotal(prizes){
+  return prizes.reduce((sum, p) => sum + (p.id === 14 ? 0 : (p.count || 0)), 0);
+}
+function renderState(d){
+  prizeListEl.innerHTML = d.prizes.map(rowTpl).join('');
+  const nb = nonBonusTotal(d.prizes);
+  totalEl.textContent = nb;   // left header count
+  poolEl.textContent  = nb;   // right oval count
+}
+function renderBonusStrip(){
+  if(!bonusHits.length){
+    bonusStrip.style.display='none';
+    bonusStrip.innerHTML='';
+    return;
+  }
+  bonusStrip.style.display='flex';
+  bonusStrip.innerHTML=bonusHits
+    .map(src=>`<img src="/static/images/${src}" alt="bonus">`)
+    .join('');
+}
+
+/* ========= helpers ========= */
+function testImg(src){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload = ()=>res({ok:true,src});
+    im.onerror= ()=>res({ok:false,src});
+    im.src=src+'?v='+Math.random();
+  });
+}
+async function detectBallImage(){
+  for(const s of BALL_CANDIDATES){ const r=await testImg(s); if(r.ok) return r.src; }
+  return null;
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ========= Spawner ========= */
+const MAX_BALLS=1600;
+const SPAWN_MS=16;
+
+function startBalls(){
+  stopBalls();
+  ballsAlive=0;
+  ballTimer=setInterval(()=>{
+    if(ballsAlive>=MAX_BALLS || !BALL_IMG) return;
+    const cw=stage.clientWidth;
+    const sc=0.8+Math.random()*0.7;
+    const dur=(0.9+Math.random()*0.9).toFixed(2);
+    const base=36*sc;
+    const x=Math.random()*(cw-base-12)+6;
+    const b=document.createElement('img');
+    b.className='ball';
+    b.src=BALL_IMG; b.alt='pokeball';
+    b.style.left=`${x}px`;
+    b.style.setProperty('--sc',sc.toFixed(2));
+    b.style.setProperty('--dur',`${dur}s`);
+    const drift=(Math.random()*2-1)*Math.min(180,cw*0.22);
+    b.style.setProperty('--dx',`${drift.toFixed(1)}px`);
+    rainLayer.appendChild(b);
+    ballsAlive++;
+    b.addEventListener('animationend',()=>{ b.remove(); ballsAlive--; },{once:true});
+  },SPAWN_MS);
+}
+function stopBalls(){
+  if(ballTimer){ clearInterval(ballTimer); ballTimer=null; }
+}
+
+/* ========= Celebration: 200 Pikachus full-screen for prizes 1..5 ========= */
+async function celebrateWin(){
+  if(!celebrateLayer) return;
+
+  // clear any previous runners
+  celebrateLayer.innerHTML = '';
+
+  // ensure no overlapping cheer
+  try{ cheerSfx.pause(); cheerSfx.currentTime=0; }catch(e){}
+  try{ await cheerSfx.play(); }catch(e){}
+
+  const H = window.innerHeight || document.documentElement.clientHeight || 600;
+  const count = 200;
+
+  for(let i=0;i<count;i++){
+    const img=document.createElement('img');
+    img.className='runner';
+    img.src=PIKACHU_GIF; img.alt='Pikachu!';
+    const top = Math.random()*(H-90)+10;
+    img.style.top = `${top}px`;
+    const dur   = (2.6 + Math.random()*2.8).toFixed(2); // 2.6..5.4s
+    const delay = (Math.random()*1.8).toFixed(2);        // 0..1.8s
+    img.style.animationDuration = `${dur}s, 1.6s`;       // dash, bob
+    img.style.animationDelay    = `${delay}s, 0s`;
+    if(Math.random()<0.25){ img.style.width='min(9vmin, 110px)'; }
+    celebrateLayer.appendChild(img);
+    img.addEventListener('animationend', ()=>img.remove(), {once:true});
+  }
+
+  setTimeout(()=>{ try{ cheerSfx.pause(); cheerSfx.currentTime=0; }catch(e){} }, 7000);
+}
+
+/* ========= Interactions ========= */
+runBtn.addEventListener('click', async ()=>{
+  if(running) return;
+  running=true; runBtn.disabled=true;
+
+  // Clear thumbnails only for a manual run (fresh start), not for auto-reruns
+  if(!autoChain){
+    bonusHits=[]; renderBonusStrip();
+  }
+
+  // 1) balls + fall sound
+  startBalls();
+  try{ await fallSfx.play(); }catch(e){}
+  await wait(5000);
+  stopBalls();
+  fallSfx.pause(); fallSfx.currentTime=0;
+  await wait(1200);
+  try { await caughtSfx.play(); } catch(e) {}
+
+  // 2) Show GIF
+  displayLayer.classList.remove('hidden');
+  displayImg.className='gif';
+  displayImg.src='/static/images/cardshow/pokeball_open.gif';
+  await wait(4000);
+
+  // 3) Draw prize
+  const res=await API.draw();
+  if(res.error){ resetView(); return; }
+
+  // BONUS hit (id 14): accumulate + auto-rerun
+  if(res.chosen && res.chosen.id===14){
+    // avoid overlapping bonus SFX
+    try{ bonusSfx.pause(); bonusSfx.currentTime=0; }catch(e){}
+    try{ await bonusSfx.play(); }catch(e){}
+    bonusHits.push(res.chosen.img);
+    renderBonusStrip();
+
+    autoChain=true;
+    setTimeout(()=>{ resetView(); runBtn.click(); }, 1500);
+    return;
+  }
+
+  // Non-bonus result ends the chain
+  autoChain=false;
+
+  // Celebrate if prize id is 1..5
+  if(res.chosen && [1,2,3,4,5].includes(res.chosen.id)){
+    celebrateWin();
+  }
+
+  // Show prize (smaller)
+  displayImg.className='prize';
+  displayImg.src=`/static/images/${res.chosen.img}`;
+  renderState(res);
+
+  displayLayer.addEventListener('click',resetView,{once:true});
+});
+
+function resetView(){
+  displayLayer.classList.add('hidden');
+  displayImg.src='';
+  displayImg.className='';
+  runBtn.disabled=false;
+  running=false;
+}
+
+resetBtn.addEventListener('click',async()=>{
+  if(!confirm('Reset prizes?')) return;
+  autoChain=false;
+  bonusHits=[];
+  renderBonusStrip();
+  await API.reset();
+  await load();
+});
+
+/* ========= Boot ========= */
+async function load(){
+  try{
+    const data=await API.state();
+    renderState(data);
+  }catch(e){
+    prizeListEl.innerHTML=`<div style="color:#fca5a5">Failed to load prizes.</div>`;
+  }
+}
+
+(async()=>{
+  BALL_IMG=await detectBallImage();
+  await load();
+})();
+</script>
+</body>
+</html>
