@@ -43,7 +43,7 @@
     grid-auto-rows: 1fr;
   }
 
-  /* LEFT — column scrolls internally if tall */
+  /* LEFT — column scrolls internally if tall (we'll override via scale when needed) */
   .left{
     display:flex; flex-direction:column;
     border:1px solid #1f2937; border-radius:16px;
@@ -58,6 +58,12 @@
     color:#cbd5e1;
   }
   #prizeList{ flex:1 1 auto; overflow:auto; min-height:0; }
+
+  /* When auto-scaled, hide overflow and scale from top-left */
+  .prizeList--scaled{
+    overflow:hidden !important;
+    transform-origin: top left;
+  }
 
   .prize-row{
     display:grid;
@@ -82,6 +88,20 @@
     color:#93c5fd;
     font-variant-numeric: tabular-nums;
     font-size: clamp(13px, 2vh, 17px);
+  }
+
+  /* Prefer shrinking row sizes on short monitors before scaling */
+  @media (max-height: 780px){
+    .prize-row{ padding: 4px 6px; gap: 8px; }
+    .prize-row img{ width:46px; height:46px; }
+    .prize-name{ font-size: 14px; }
+    .prize-count{ font-size: 13px; }
+  }
+  @media (max-height: 680px){
+    .prize-row{ padding: 3px 6px; gap: 6px; }
+    .prize-row img{ width:40px; height:40px; }
+    .prize-name{ font-size: 13px; }
+    .prize-count{ font-size: 12px; }
   }
 
   /* MIDDLE (stage) */
@@ -214,9 +234,7 @@
   button:disabled{ opacity:.55; cursor:not-allowed }
   .hint{ color:#9ca3af; font-size:12px; text-align:center }
 
-  /* Narrow width fallback: keep single column but still avoid page scroll
-     by giving the middle a fixed slice of the viewport and letting side
-     panels scroll internally. */
+  /* Narrow width fallback */
   @media (max-width: 1100px){
     .app{
       grid-template-columns:1fr;
@@ -494,6 +512,47 @@ resetBtn.addEventListener('click',async()=>{
   await load();
 });
 
+/* ========= Auto-fit the left prize list (no scroll) ========= */
+function fitPrizeList(){
+  const list = prizeListEl;
+  const panel = list?.closest('.left');
+  if(!list || !panel) return;
+
+  // Reset previous scaling
+  list.style.transform = '';
+  list.style.height = '';
+  list.classList.remove('prizeList--scaled');
+
+  // Compute available height
+  const styles = getComputedStyle(panel);
+  const padTop = parseFloat(styles.paddingTop) || 0;
+  const padBot = parseFloat(styles.paddingBottom) || 0;
+  const header = panel.querySelector('h2');
+  const headH = header ? header.offsetHeight : 0;
+
+  const available = panel.clientHeight - headH - padTop - padBot;
+  const needed = list.scrollHeight;
+
+  // If content is taller than available, scale it down (not below 60%)
+  if (available > 0 && needed > available) {
+    const scale = Math.max(0.6, Math.min(1, available / needed));
+    list.style.transform = `scale(${scale})`;
+    list.style.height = `${(100/scale)}%`;     // expand box so scaled content fills
+    list.classList.add('prizeList--scaled');
+  }
+}
+
+// Re-run when viewport changes
+window.addEventListener('resize', fitPrizeList);
+window.addEventListener('orientationchange', fitPrizeList);
+
+// Hook into renderState so every time prizes update, we refit after paint
+const __renderState = renderState;
+renderState = function(d){
+  __renderState(d);
+  requestAnimationFrame(fitPrizeList);
+};
+
 /* ========= Boot ========= */
 async function load(){
   try{
@@ -501,12 +560,66 @@ async function load(){
     renderState(data);
   }catch(e){
     prizeListEl.innerHTML=`<div style="color:#fca5a5">Failed to load prizes.</div>`;
+    // still try to fit to avoid scroll bars on error
+    requestAnimationFrame(fitPrizeList);
   }
 }
 
 (async()=>{
   BALL_IMG=await detectBallImage();
   await load();
+})();
+
+/* ========= ABC simultaneous hotkey ========= */
+(() => {
+  const down = new Set();
+  let comboArmed = true;
+
+  function isTypingTarget(el){
+    const t = (el && el.tagName) ? el.tagName.toLowerCase() : '';
+    return t === 'input' || t === 'textarea' || el.isContentEditable;
+  }
+  function abcHeld() {
+    return down.has('KeyA') && down.has('KeyB') && down.has('KeyC');
+  }
+
+  // If you prefer “pressed within X ms” instead of strict hold, set >0
+  const windowMs = 0;
+  const stamp = { KeyA: 0, KeyB: 0, KeyC: 0 };
+  function abcWithinWindow() {
+    if (windowMs <= 0) return true;
+    const times = [stamp.KeyA, stamp.KeyB, stamp.KeyC];
+    const minT = Math.min(...times), maxT = Math.max(...times);
+    return (maxT - minT) <= windowMs;
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (isTypingTarget(e.target)) return;
+    if (e.repeat) return;
+    if (!/^Key[A-Z]$/.test(e.code)) return;
+
+    down.add(e.code);
+    if (e.code in stamp) stamp[e.code] = performance.now();
+
+    if (abcHeld() && abcWithinWindow() && comboArmed) {
+      if (!running && !runBtn.disabled) {
+        runBtn.click();
+      }
+      comboArmed = false;
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (/^Key[A-Z]$/.test(e.code)) {
+      down.delete(e.code);
+      if (!abcHeld()) comboArmed = true;
+    }
+  });
+
+  window.addEventListener('blur', () => {
+    down.clear();
+    comboArmed = true;
+  });
 })();
 </script>
 </body>
