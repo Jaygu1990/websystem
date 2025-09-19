@@ -18,6 +18,8 @@
   :root{ --text:#e5e7eb; --muted:#9ca3af; --ring:#334155; }
   *{ box-sizing:border-box; margin:0; padding:0 }
   html,body{ height:100%; }
+  /* Hard-stop page scrolling; panels handle their own overflow */
+  html,body{ overflow:hidden; }
 
   body{
     font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
@@ -29,7 +31,7 @@
   }
 
   .app{
-    height:100%;
+    height:100vh; /* fill the viewport exactly */
     display:grid;
     gap:clamp(12px, 1.6vw, 18px);
     padding:clamp(10px, 1.8vw, 18px);
@@ -37,18 +39,17 @@
       clamp(260px, 22vw, 360px)
       minmax(520px, 1fr)
       clamp(280px, 20vw, 360px);
+    /* keep all three columns the same height */
+    grid-auto-rows: 1fr;
   }
 
-  /* LEFT — vertical-fit */
+  /* LEFT — column scrolls internally if tall */
   .left{
-    display:flex;
-    flex-direction:column;
-    border:1px solid #1f2937;
-    border-radius:16px;
-    background:rgba(3,7,18,.55);
-    backdrop-filter: blur(2px);
+    display:flex; flex-direction:column;
+    border:1px solid #1f2937; border-radius:16px;
+    background:rgba(3,7,18,.55); backdrop-filter: blur(2px);
     padding:clamp(8px, 1.2vw, 14px);
-    max-height:100%;
+    min-height:0; /* allow child overflow:auto to work in grid */
   }
   .left h2{
     flex:0 0 auto;
@@ -56,7 +57,7 @@
     font-size:clamp(16px, 2.2vh, 18px);
     color:#cbd5e1;
   }
-  #prizeList{ flex:1 1 auto; overflow:auto; }
+  #prizeList{ flex:1 1 auto; overflow:auto; min-height:0; }
 
   .prize-row{
     display:grid;
@@ -82,37 +83,25 @@
     font-variant-numeric: tabular-nums;
     font-size: clamp(13px, 2vh, 17px);
   }
-  @media (max-height: 800px){
-    .prize-row{
-      grid-template-columns: clamp(48px, 6.2vh, 64px) 1fr auto;
-      gap: clamp(6px, 1.1vh, 10px);
-      padding: clamp(4px, 1vh, 8px);
-    }
-    .prize-row img{
-      width: clamp(44px, 5.8vh, 60px);
-      height: clamp(44px, 5.8vh, 60px);
-    }
-    .prize-name{ font-size: clamp(13px, 2vh, 16px); }
-    .prize-count{ font-size: clamp(12px, 1.8vh, 15px); }
-  }
-  @media (max-height: 650px){
-    .left h2{ font-size: clamp(14px, 2vh, 16px); }
-    .prize-row{ gap: clamp(4px, 0.9vh, 8px); padding: clamp(3px, 0.8vh, 6px); }
-  }
 
-  /* MIDDLE (rain stage) */
+  /* MIDDLE (stage) */
   .middle{
     position:relative;
     border:1px solid #1f2937; border-radius:20px;
     background: rgba(3,7,18,.55);
     backdrop-filter: blur(2px);
     overflow:hidden; display:grid; place-items:center;
+    min-height:0; /* critical so the center can shrink within the viewport */
   }
   .rain{ position:absolute; inset:0; pointer-events:none; z-index:3; }
 
   .box{
-    width:clamp(420px, 68vmin, 760px);
-    height:clamp(420px, 68vmin, 760px);
+    /* Always fit inside the stage and viewport without forcing page scroll */
+    width: min(72vmin, calc(100% - 32px));
+    height: min(72vmin, calc(100% - 32px));
+    max-width: 92vh;  /* extra guardrails for ultra-wide screens */
+    max-height: 92vh;
+
     border-radius:24px;
     background: rgba(3,7,18,.60);
     backdrop-filter: blur(2px);
@@ -145,19 +134,17 @@
   }
   .display img.prize{ width:70%; height:70%; object-fit:contain; margin-top:-10%; }
   .display img.gif{
-    width:120%;
-    height:120%;
+    /* occupy the whole middle box per your request (no inner circle) */
+    width:100%;
+    height:100%;
     object-fit:contain;
-    margin-top:-25%;
+    margin:0;
   }
 
   /* Celebration layer (full-screen) */
   .celebrate-layer{
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:999;
-    overflow:hidden;
+    position:fixed; inset:0; pointer-events:none;
+    z-index:999; overflow:hidden;
   }
   .runner{
     position:absolute; top:0; left:-140px;
@@ -191,7 +178,7 @@
     width:36px; height:36px;
     object-fit:contain; opacity:.95;
     filter: drop-shadow(0 6px 8px rgba(0,0,0,.45));
-    animation: fall var(--dur,1.15s) linear forwards;
+    animation: fall var(--dur,1.0s) linear forwards; /* slightly faster default fall */
     will-change: top, transform, opacity;
   }
   @keyframes fall{
@@ -201,12 +188,13 @@
     100% { top: calc(100% + 72px); transform: translateX(var(--dx,0)) rotate(760deg) scale(var(--sc,1)); opacity:.25 }
   }
 
-  /* RIGHT */
+  /* RIGHT — internal scroll if needed */
   .right{
     border:1px solid #1f2937; border-radius:16px;
     background:rgba(3,7,18,.55); backdrop-filter: blur(2px);
     padding:16px; display:flex; flex-direction:column;
     gap:16px; align-items:center; justify-content:center;
+    min-height:0; overflow:auto;
   }
   .oval{
     width:clamp(200px, 22vw, 260px);
@@ -226,9 +214,21 @@
   button:disabled{ opacity:.55; cursor:not-allowed }
   .hint{ color:#9ca3af; font-size:12px; text-align:center }
 
+  /* Narrow width fallback: keep single column but still avoid page scroll
+     by giving the middle a fixed slice of the viewport and letting side
+     panels scroll internally. */
   @media (max-width: 1100px){
-    .app{ grid-template-columns:1fr; height:auto }
-    .middle{ min-height:70vh }
+    .app{
+      grid-template-columns:1fr;
+      grid-template-rows: minmax(0, 35vh) minmax(0, 40vh) minmax(0, 25vh); /* left / middle / right */
+      height:100vh;
+    }
+    .middle{ min-height:0; }
+    .box{
+      width: min(78vmin, calc(100% - 24px));
+      height: min(78vmin, calc(100% - 24px));
+      max-height: 38vh;
+    }
   }
 </style>
 </head>
@@ -370,7 +370,7 @@ function startBalls(){
     if(ballsAlive>=MAX_BALLS || !BALL_IMG) return;
     const cw=stage.clientWidth;
     const sc=0.8+Math.random()*0.7;
-    const dur=(0.9+Math.random()*0.9).toFixed(2);
+    const dur=(0.8+Math.random()*0.9).toFixed(2); // a bit faster fall by default
     const base=36*sc;
     const x=Math.random()*(cw-base-12)+6;
     const b=document.createElement('img');
@@ -394,10 +394,8 @@ function stopBalls(){
 async function celebrateWin(){
   if(!celebrateLayer) return;
 
-  // clear any previous runners
   celebrateLayer.innerHTML = '';
 
-  // ensure no overlapping cheer
   try{ cheerSfx.pause(); cheerSfx.currentTime=0; }catch(e){}
   try{ await cheerSfx.play(); }catch(e){}
 
@@ -441,7 +439,7 @@ runBtn.addEventListener('click', async ()=>{
   await wait(1200);
   try { await caughtSfx.play(); } catch(e) {}
 
-  // 2) Show GIF
+  // 2) Show GIF (now fills the middle box)
   displayLayer.classList.remove('hidden');
   displayImg.className='gif';
   displayImg.src='/static/images/cardshow/pokeball_open.gif';
@@ -453,7 +451,6 @@ runBtn.addEventListener('click', async ()=>{
 
   // BONUS hit (id 14): accumulate + auto-rerun
   if(res.chosen && res.chosen.id===14){
-    // avoid overlapping bonus SFX
     try{ bonusSfx.pause(); bonusSfx.currentTime=0; }catch(e){}
     try{ await bonusSfx.play(); }catch(e){}
     bonusHits.push(res.chosen.img);
