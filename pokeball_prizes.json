@@ -34,55 +34,55 @@
       "id": 6,
       "name": "Prize 6",
       "img": "cardshow/pokeball_p6.png",
-      "count": 1
+      "count": 15
     },
     {
       "id": 7,
       "name": "Prize 7",
       "img": "cardshow/pokeball_p7.png",
-      "count": 1
+      "count": 6
     },
     {
       "id": 8,
       "name": "Prize 8",
       "img": "cardshow/pokeball_p8.png",
-      "count": 1
+      "count": 6
     },
     {
       "id": 9,
       "name": "Prize 9",
       "img": "cardshow/pokeball_p9.png",
-      "count": 1
+      "count": 4
     },
     {
       "id": 10,
       "name": "Prize 10",
       "img": "cardshow/pokeball_p10.png",
-      "count": 1
+      "count": 4
     },
     {
       "id": 11,
       "name": "Prize 11",
       "img": "cardshow/pokeball_p11.png",
-      "count": 1
+      "count": 4
     },
     {
       "id": 12,
       "name": "Prize 12",
       "img": "cardshow/pokeball_p12.png",
-      "count": 1
+      "count": 4
     },
     {
       "id": 13,
       "name": "Prize 13",
       "img": "cardshow/pokeball_p13.png",
-      "count": 1
+      "count": 2
     },
     {
       "id": 14,
       "name": "BONUS!",
       "img": "cardshow/bonus.png",
-      "count": 5
+      "count": 30
     }
   ]
 }
