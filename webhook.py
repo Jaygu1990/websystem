@@ -22,6 +22,7 @@ game_queue = []
 followers = set()
 preorder = []
 count=0
+count2=0
 
 # client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
@@ -42,6 +43,7 @@ pokemon_list = ['pikachu', 'bulbasaur', 'charmander', 'squirtle',    'eevee', 'm
 @app.route('/webhook', methods=['POST'])
 def webhook():
     global count
+    global count2
     data = request.json
     print("Received Webhook:", data)
     
@@ -95,8 +97,10 @@ def webhook():
                 game_queue.append(customer_data)
                 if product_name.lower() != "shipping" and product_name != 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet Battle Partners Pack sv9 (Japanese) - OPEN LIVE / Battle' and product_name != 'Pokemon Card Scarlet & Violet The Glory of Team Rocket Pack sv10 (Japanese) - OPEN LIVE / Battle' and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 1" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 2" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 3" and product_name != "Pokémon Champions (Japanese) - OPEN LIVE / Round 4":
                     print_jobs.append(customer_data)
-                if product_name == "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE":
+                if product_name == "Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE":
                     count+=quantity   
+                if product_name == "SV8a Terastal Festival Booster Sealed Pack(Japanese) - OPEN LIVE":
+                    count2+=quantity    
             if product_name == 'Pokemon Card Scarlet & Violet Heat Wave Arena Pack sv9a (Japanese) - OPEN LIVE / Battle':
                 user_list.append(first_name.split()[0])
             if product_name == "Pokemon Card TCG S-Chinese Horizons Gemstone Booster Box V2 (Chinese) - PRE ORDER":
@@ -147,7 +151,9 @@ def get_queueforviewers():
 def get_count():
     return render_template('count.html', queue=queue)
 
-
+@app.route('/count2', methods=['GET'])
+def get_count2():
+    return render_template('count2.html', queue=queue)
 
 @app.route('/queue_data', methods=['GET'])
 def queue_data():
@@ -172,6 +178,11 @@ def pull_count():
         "count":count
     })
 
+@app.route('/pull_count2', methods=['GET'])
+def pull_count2():
+    return jsonify({
+        "count":count2
+    })
 
 
 @app.route('/complete/<int:index>', methods=['POST'])
@@ -216,6 +227,20 @@ def add_count():
     global count
     count+=1
     return '', 204  
+
+@app.route('/minus_count2', methods=['POST'])
+def minus_count2():
+    global count2
+    count2-=1
+    return '', 204  
+
+
+@app.route('/add_count2', methods=['POST'])
+def add_count2():
+    global count2
+    count2+=1
+    return '', 204  
+
 
 
 @app.route('/select_random_customers', methods=['POST'])
@@ -459,6 +484,7 @@ def home():
                 <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
                 <button class="button" onclick="window.location.href='/flipgame'">Go to Flip</button>
                 <button class="button" onclick="window.location.href='/count'">Go to Count</button>
+                <button class="button" onclick="window.location.href='/count2'">Go to Count 2</button>
             </div>
         </body>
     </html>

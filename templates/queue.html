@@ -68,6 +68,9 @@
     <button id="Preorder" onclick="clearPreorder()">Clear Pre Order</button>
     <button id="Add" onclick="addCount()">Add Count</button>
     <button id="Minus" onclick="minusCount()">Minus Count</button>
+
+    <button id="Add2" onclick="addCount2()">Add Count 2</button>
+    <button id="Minus2" onclick="minusCount2()">Minus Count 2</button>
   </div>
 
   <!-- Config Panel for /api/pokeball_config -->
@@ -150,10 +153,13 @@
     function clearBattle(){ fetch('/clear_battle',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     function Energy(){ fetch('/start-slot-machine',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     function clearPreorder(){ fetch('/clear_preorderqueue',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
+
+    
     function minusCount(){ fetch('/minus_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
+    function minusCount2(){ fetch('/minus_count2',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     // ✅ New addCount function
     function addCount(){ fetch('/add_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-
+    function addCount2(){ fetch('/add_count2',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
     setInterval(fetchQueue,3000);
 
     /* ====== Minimal config panel logic ====== */

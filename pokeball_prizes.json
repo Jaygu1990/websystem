@@ -40,13 +40,13 @@
       "id": 7,
       "name": "Prize 7",
       "img": "cardshow/pokeball_p7.png",
-      "count": 6
+      "count": 5
     },
     {
       "id": 8,
       "name": "Prize 8",
       "img": "cardshow/pokeball_p8.png",
-      "count": 6
+      "count": 5
     },
     {
       "id": 9,
@@ -82,7 +82,7 @@
       "id": 14,
       "name": "BONUS!",
       "img": "cardshow/bonus.png",
-      "count": 30
+      "count": 27
     }
   ]
 }
