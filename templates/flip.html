@@ -1,434 +1,455 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Card Flip Game</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Card Flip Game</title>
+    <style>
+        :root{
+            --primary-blue:#1a73e8;
+            --primary-yellow:#ffeb3b;
+            --shadow:0 4px 8px rgba(0,0,0,0.2);
+            --transition:all 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
 
-  <style>
-    :root{
-      --primary-blue:#1a73e8;
-      --primary-yellow:#ffeb3b;
-      --shadow:0 4px 8px rgba(0,0,0,0.2);
-      --transition:all 0.5s cubic-bezier(0.4,0,0.2,1);
-    }
+        body{
+            margin:0; padding:20px;
+            font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display:flex; flex-direction:column; justify-content:center; align-items:center;
+            min-height:100vh; box-sizing:border-box;
+            background-image:url('/static/images/background.gif');
+            background-size:cover; background-position:center; background-attachment:fixed;
+            position:relative;
+        }
 
-    body{
-      margin:0; padding:20px;
-      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display:flex; flex-direction:column; justify-content:center; align-items:center;
-      min-height:100vh; box-sizing:border-box;
-      background-image:url('/static/images/background.gif');
-      background-size:cover; background-position:center; background-attachment:fixed;
-      position:relative;
-    }
+        h1{
+            color:#ff0000; margin:0 0 40px 0; font-size:3rem; font-weight:bold; text-transform:uppercase; letter-spacing:3px;
+            text-shadow:2px 2px 4px rgba(0,0,0,0.1);
+            position:relative; min-height:100px; display:flex; align-items:center; justify-content:center; text-align:center;
+            z-index:1; background-color:rgba(0,0,0,0.7); padding:15px; border-radius:10px; border:3px solid gold;
+        }
 
-    h1{
-      color:#ff0000; margin:0 0 40px 0; font-size:3rem; font-weight:bold;
-      text-transform:uppercase; letter-spacing:3px;
-      text-shadow:2px 2px 4px rgba(0,0,0,0.1);
-      position:relative; min-height:100px; display:flex; align-items:center; justify-content:center; text-align:center; z-index:1;
-      background-color:rgba(0,0,0,0.7); padding:15px; border-radius:10px; border:3px solid gold;
-    }
+        .game-container {
+          width: 100%;
+          max-width: 1750px;
+          margin: 0 auto 30px;
+          background: rgba(255,255,255,0.95);
+          border-radius: 20px;
+          padding: clamp(20px, 1.8vw, 35px);
+          box-shadow: var(--shadow);
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
 
-    .game-container{
-      width:95%; max-width:1000px; background:#fff; border-radius:20px; padding:30px; box-shadow:var(--shadow);
-      margin-bottom:30px; position:relative; z-index:1;
-    }
+        .card-grid {
+          display: grid;
+          grid-template-columns: repeat(10, 1fr);
+          grid-template-rows: repeat(3, 1fr);
+          gap: 22px;
+          justify-content: center;
+          align-content: center;
+          width: 100%;
+          max-width: 1650px;
+          margin: 0 auto;
+        }
 
-    .card-grid{
-      display:grid; grid-template-columns:repeat(10,1fr); grid-template-rows:repeat(5,1fr);
-      gap:15px; margin-bottom:25px;
-    }
+        .card {
+          aspect-ratio: 2 / 3;
+          min-width: 115px;
+          position: relative;
+          transform-style: preserve-3d;
+          cursor: pointer;
+        }
 
-    .card{ aspect-ratio:2/3; position:relative; transform-style:preserve-3d; cursor:pointer; }
-    .card-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:var(--transition); }
-    .card.flipped .card-inner{ transform:rotateY(180deg); }
+        .card-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:var(--transition); }
+        .card.flipped .card-inner{ transform:rotateY(180deg); }
 
-    .card-face{
-      position:absolute; width:100%; height:100%; backface-visibility:hidden; border-radius:10px;
-      display:flex; justify-content:center; align-items:center; box-shadow:var(--shadow);
-    }
-    .front{ background:var(--primary-blue); color:var(--primary-yellow); font-size:28px; font-weight:bold; transform:rotateY(0deg); }
-    .back{ background:#fff; transform:rotateY(180deg); overflow:hidden; border:3px solid #fff; }
-    .back img{ width:100%; height:100%; object-fit:cover; border-radius:8px; }
+        .card-face{
+            position:absolute; width:100%; height:100%; backface-visibility:hidden; border-radius:10px;
+            display:flex; justify-content:center; align-items:center; box-shadow:var(--shadow); overflow:hidden;
+        }
+        .front{ background:var(--primary-blue); color:var(--primary-yellow); font-size:28px; font-weight:bold; transform:rotateY(0deg); }
+        .back{ background:white; transform:rotateY(180deg); overflow:hidden; border:3px solid white; }
 
-    .controls{ display:flex; justify-content:center; gap:15px; margin-top:20px; }
-    button{
-      padding:12px 24px; background:var(--primary-blue); color:#fff; border:none; border-radius:8px;
-      font-size:16px; font-weight:600; cursor:pointer; transition:all .2s; box-shadow:var(--shadow);
-    }
-    button:hover{ transform:translateY(-3px); box-shadow:0 6px 12px rgba(0,0,0,0.15); }
-    button:active{ transform:translateY(0); }
+        /* MAIN back image fills the card */
+        .back img.card-art{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            border-radius:8px;
+            display:block;
+        }
 
-    .fullscreen-overlay{
-      position:fixed; inset:0; background:rgba(0,0,0,0.9);
-      display:flex; justify-content:center; align-items:center;
-      z-index:1000; opacity:0; pointer-events:none; transition:opacity .3s ease;
-    }
-    .fullscreen-overlay.active{ opacity:1; pointer-events:all; }
-    .fullscreen-image{ max-width:90%; max-height:90%; border-radius:15px; box-shadow:0 0 30px rgba(0,0,0,0.8); }
+        /* Corner gif overlay (visible on BOTH faces) */
+        .corner-gif{
+            position:absolute; top:4px; left:4px;
+            width:50%; height:50%;
+            object-fit:contain;
+            pointer-events:none; /* allow clicks to pass to the card */
+            z-index:2; /* on top of face content */
+        }
 
-    @keyframes flipToQuestion{ 0%{transform:rotateY(0)} 50%{transform:rotateY(90deg)} 100%{transform:rotateY(180deg)} }
-    @keyframes flipToCard{ 0%{transform:rotateY(180deg)} 50%{transform:rotateY(270deg)} 100%{transform:rotateY(360deg)} }
-    .flipping{ animation:flipToQuestion .5s forwards; }
-    .unflipping{ animation:flipToCard .5s forwards; }
-    .long-flip{ animation-duration:14s !important; }
+        .controls{ display:flex; justify-content:center; gap:15px; margin-top:20px; }
+        button{
+            padding:12px 24px; background:var(--primary-blue); color:white; border:none; border-radius:8px;
+            font-size:16px; font-weight:600; cursor:pointer; transition:all .2s; box-shadow:var(--shadow);
+        }
+        button:hover{ transform:translateY(-3px); box-shadow:0 6px 12px rgba(0,0,0,0.15); }
+        button:active{ transform:translateY(0); }
 
-    @keyframes lightSweep{ 0%{background-position:-100% -100%} 100%{background-position:200% 200%} }
-    .card-shine{ position:relative; overflow:hidden; }
-    .card-shine::after{
-      content:'';
-      position:absolute; inset:0;
-      background:linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%);
-      background-size:200% 200%; animation:lightSweep 1s ease-out; opacity:0;
-    }
-    .card-shine-active::after{ opacity:1; }
+        .fullscreen-overlay{
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.9); display:flex; justify-content:center; align-items:center;
+            z-index:1000; opacity:0; pointer-events:none; transition:opacity .3s ease;
+        }
+        .fullscreen-overlay.active{ opacity:1; pointer-events:all; }
+        .fullscreen-image{ max-width:90%; max-height:90%; border-radius:15px; box-shadow:0 0 30px rgba(0,0,0,0.8); }
 
-    .trainer-overlay{
-      position:fixed; inset:0; display:flex; justify-content:center; align-items:center;
-      z-index:999; pointer-events:none; opacity:0; transition:opacity .3s ease;
-    }
-    .trainer-overlay.active{ opacity:1; }
-    .trainer-image{ max-width:60%; max-height:60%; animation:trainerAppear .5s ease-out; }
-    @keyframes trainerAppear{ 0%{transform:scale(.8); opacity:0} 100%{transform:scale(1); opacity:1} }
+        @keyframes flipToQuestion{ 0%{transform:rotateY(0)} 50%{transform:rotateY(90deg)} 100%{transform:rotateY(180deg)} }
+        @keyframes flipToCard{ 0%{transform:rotateY(180deg)} 50%{transform:rotateY(270deg)} 100%{transform:rotateY(360deg)} }
+        .flipping{ animation:flipToQuestion .5s forwards; }
+        .unflipping{ animation:flipToCard .5s forwards; }
+        .long-flip{ animation-duration:14s !important; }
 
-    .gameboy-window{
-      position:fixed; top:150px; left:50%; transform:translateX(-50%);
-      width:80%; max-width:600px; background:#e0f8d0; border:8px solid #3a5f0b; border-radius:15px; padding:25px;
-      font-family:'Courier New', monospace; font-size:24px; font-weight:bold; color:#000;
-      box-shadow:0 0 0 4px #8bac0f, 0 0 0 8px #306230; z-index:1001; opacity:0; transition:opacity .3s ease;
-      pointer-events:none; line-height:1.4; text-transform:uppercase;
-    }
-    .gameboy-window.active{ opacity:1; }
-    .gameboy-window::before{ content:''; position:absolute; inset:5px; border:2px solid #8bac0f; border-radius:8px; pointer-events:none; }
-    .gameboy-text{ margin:0; text-shadow:1px 1px 0 rgba(255,255,255,.5); font-weight:bold; }
-  </style>
+        @keyframes lightSweep{ 0%{background-position:-100% -100%} 100%{background-position:200% 200%} }
+        .card-shine{ position:relative; overflow:hidden; }
+        .card-shine::after{
+            content:''; position:absolute; inset:0;
+            background:linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.7) 50%, rgba(255,255,255,0) 100%);
+            background-size:200% 200%; animation:lightSweep 1s ease-out; opacity:0;
+        }
+        .card-shine-active::after{ opacity:1; }
+
+        .trainer-overlay{
+            position:fixed; inset:0; display:flex; justify-content:center; align-items:center; z-index:999;
+            pointer-events:none; opacity:0; transition:opacity .3s ease;
+        }
+        .trainer-overlay.active{ opacity:1; }
+        .trainer-image{ max-width:60%; max-height:60%; animation:trainerAppear .5s ease-out; }
+        @keyframes trainerAppear{ 0%{transform:scale(.8); opacity:0} 100%{transform:scale(1); opacity:1} }
+        @keyframes trainerDisappear{ 0%{transform:scale(1); opacity:1} 100%{transform:scale(.8); opacity:0} }
+
+        .gameboy-window{
+            position:fixed; top:150px; left:50%; transform:translateX(-50%);
+            width:80%; max-width:600px; background:#e0f8d0; border:8px solid #3a5f0b; border-radius:15px; padding:25px;
+            font-family:'Courier New', monospace; font-size:24px; font-weight:bold; color:#000;
+            box-shadow:0 0 0 4px #8bac0f, 0 0 0 8px #306230;
+            z-index:1001; opacity:0; transition:opacity .3s ease; pointer-events:none; line-height:1.4; text-transform:uppercase;
+        }
+        .gameboy-window.active{ opacity:1; }
+        .gameboy-window::before{ content:''; position:absolute; top:5px; left:5px; right:5px; bottom:5px; border:2px solid #8bac0f; border-radius:8px; pointer-events:none; }
+        .gameboy-text{ margin:0; text-shadow:1px 1px 0 rgba(255,255,255,.5); font-weight:bold; }
+    </style>
 </head>
 <body>
-  <div class="trainer-overlay" id="trainerOverlay">
-    <img class="trainer-image" id="trainerImage" src="" alt="Trainer"/>
-  </div>
-  <div class="gameboy-window" id="gameboyWindow">
-    <p class="gameboy-text" id="gameboyText"></p>
-  </div>
-
-  <h1 id="gameTitle">NO GAMBLING</h1>
-
-  <div class="game-container">
-    <div class="card-grid" id="cardGrid"></div>
-    <div class="controls">
-      <button id="resetBtn">Reset Game</button>
+    <div class="trainer-overlay" id="trainerOverlay">
+        <img class="trainer-image" id="trainerImage" src="" alt="Trainer">
     </div>
-  </div>
+    <div class="gameboy-window" id="gameboyWindow">
+        <p class="gameboy-text" id="gameboyText"></p>
+    </div>
 
-  <div class="fullscreen-overlay" id="fullscreenOverlay">
-    <img class="fullscreen-image" id="fullscreenImage" src="" alt="Fullscreen card"/>
-  </div>
+    <h1 id="gameTitle">NO GAMBLING</h1>
 
-  <!-- Sounds -->
-  <audio id="flipSound" preload="auto"><source src="/static/sounds/curious.mp3" type="audio/mpeg"/></audio>
-  <audio id="hitSound" preload="auto"><source src="/static/sounds/hit.mp3" type="audio/mpeg"/></audio>
-  <audio id="trainerSound" preload="auto"><source src="/static/sounds/trainer.mp3" type="audio/mpeg"/></audio>
-  <audio id="fireSound" preload="auto"><source src="/static/sounds/fire.mp3" type="audio/mpeg"/></audio>
-  <audio id="doorSound" preload="auto"><source src="/static/sounds/lighting.mp3" type="audio/mpeg"/></audio>
-  <audio id="squidSound" preload="auto"><source src="/static/sounds/squid-game-tone.mp3" type="audio/mpeg"/></audio>
+    <div class="game-container">
+        <div class="card-grid" id="cardGrid"></div>
+        <div class="controls">
+            <button id="resetBtn">Reset Game</button>
+        </div>
+    </div>
 
-  <script>
+    <div class="fullscreen-overlay" id="fullscreenOverlay">
+        <img class="fullscreen-image" id="fullscreenImage" src="" alt="Fullscreen card">
+    </div>
+
+    <!-- Keep SFX (flip/hit/trainer). Removed music tracks & controls -->
+    <audio id="flipSound" preload="auto"><source src="/static/sounds/curious.mp3" type="audio/mpeg"></audio>
+    <audio id="hitSound" preload="auto"><source src="/static/sounds/hit.mp3" type="audio/mpeg"></audio>
+    <audio id="trainerSound" preload="auto"><source src="/static/sounds/trainer.mp3" type="audio/mpeg"></audio>
+
+    <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      // Elements
-      const cardGrid = document.getElementById('cardGrid');
-      const resetBtn = document.getElementById('resetBtn');
-      const flipSound = document.getElementById('flipSound');
-      const hitSound = document.getElementById('hitSound');
-      const fireSound = document.getElementById('fireSound');
-      const trainerSound = document.getElementById('trainerSound');
-      const fullscreenOverlay = document.getElementById('fullscreenOverlay');
-      const fullscreenImage = document.getElementById('fullscreenImage');
-      const trainerOverlay = document.getElementById('trainerOverlay');
-      const trainerImage = document.getElementById('trainerImage');
-      const gameboyWindow = document.getElementById('gameboyWindow');
-      const gameboyText = document.getElementById('gameboyText');
-      const doorSound = document.getElementById('doorSound');
-      const squidSound = document.getElementById('squidSound');
+        // Elements
+        const cardGrid = document.getElementById('cardGrid');
+        const resetBtn = document.getElementById('resetBtn');
+        const flipSound = document.getElementById('flipSound');
+        const hitSound = document.getElementById('hitSound');
+        const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+        const fullscreenImage = document.getElementById('fullscreenImage');
 
-      // Volumes
-      flipSound.volume = 0.8;
-      hitSound.volume = 0.8;
-      fireSound.volume = 0.8;
-      trainerSound.volume = 0.5;
-      doorSound.volume = 0.8;
-      squidSound.volume = 0.8;
+        // Trainer elements
+        const trainerOverlay = document.getElementById('trainerOverlay');
+        theTrainerImage = document.getElementById('trainerImage');
+        const trainerSound = document.getElementById('trainerSound');
+        const gameboyWindow = document.getElementById('gameboyWindow');
+        const gameboyText = document.getElementById('gameboyText');
 
-      // Constants
-      const TOTAL_CARDS = 50;
+        // State
+        let gameState = { numbers: [], images: [], flipped: [] };
+        let isFlipping = false;
+        let soundTimeout;
+        let isTrainerShowing = false;
 
-      // State
-      let gameState = { numbers: [], images: [], flipped: [] };
-      let isFlipping = false;
-      let soundTimeout;
-      let isTrainerShowing = false;
+        // Volumes
+        flipSound.volume = 0.8;
+        hitSound.volume = 0.8;
+        trainerSound.volume = 0.5;
 
-      // Helpers (Trainer)
-      function getUnflippedNumbers(){
-        const list = [];
-        gameState.flipped.forEach((f,i)=>{ if(!f) list.push(gameState.numbers[i]); });
-        return list;
-      }
-
-      function showTrainer(){
-        const unflippedNumbers = getUnflippedNumbers();
-        if(!unflippedNumbers.length || isTrainerShowing) return;
-        isTrainerShowing = true;
-        const trainerNum = Math.floor(Math.random()*10)+1;
-        trainerImage.src = `/static/images/trainer${trainerNum}.gif`;
-        const randomNumber = unflippedNumbers[Math.floor(Math.random()*unflippedNumbers.length)];
-        const messages = [
-          `MY POKéDEX DATA SUGGESTS CARD ${randomNumber} IS A STRONG HIT CANDIDATE!`,
-          `RESEARCH SHOWS ${randomNumber} HAS 87% HIT POTENTIAL!`,
-          `ACCORDING TO MY STUDIES, ${randomNumber} IS DUE FOR A HIT!`,
-          `STATISTICALLY, ${randomNumber} MATCHES RECENT HIT PATTERNS!`,
-          `MY POKéMON BATTLE ALGORITHM PREDICTS ${randomNumber} WILL HIT!`,
-          `HMM... ${randomNumber} SHOWS PROMISING HIT CHARACTERISTICS!`,
-          `LAB RESULTS INDICATE ${randomNumber} HAS HIGH HIT ENERGY!`,
-          `THE TYPE ADVANTAGE FAVORS CARD ${randomNumber} FOR A HIT!`,
-          `MY POKéMON BREEDING EXPERIENCE SUGGESTS ${randomNumber}!`,
-          `EVOLUTIONARY PATTERNS POINT TO ${randomNumber} AS NEXT HIT!`,
-          `MY KADABRA'S SPOON BENDS TOWARD ${randomNumber}... IT WILL HIT!`,
-          `I FORESEE CARD ${randomNumber} SHINING WITH HIT ENERGY!`,
-          `MY ESPER POWERS DETECT A HIT COMING FROM ${randomNumber}!`,
-          `THE UNOWN LETTERS FORM ${randomNumber}... IT'S A HIT!`,
-          `MY PSYDUCK'S HEADACHE MEANS ${randomNumber} WILL HIT!`,
-          `THE FUTURE SIGHT ATTACK REVEALS ${randomNumber} AS NEXT HIT!`,
-          `MY DARKRAI'S NIGHTMARE SHOWED ${randomNumber} HITTING!`,
-          `CELEBI'S TIME TRAVEL SHOWS ${randomNumber} AS A PAST HIT!`,
-          `MY GENGAR'S SHADOW POINTS TO ${randomNumber} FOR A HIT!`,
-          `THE LAKE TRIO WHISPERS ${randomNumber} IS THE CHOSEN HIT!`,
-        ];
-        gameboyText.textContent = messages[Math.floor(Math.random()*messages.length)];
-        trainerOverlay.classList.add('active');
-        gameboyWindow.classList.add('active');
-        try{ trainerSound.currentTime = 0; trainerSound.play(); }catch(e){}
-        setTimeout(()=>{ trainerOverlay.classList.remove('active'); gameboyWindow.classList.remove('active'); isTrainerShowing=false; }, 4000);
-      }
-
-      function scheduleTrainer(){
-        const minInterval = 60000, maxInterval = 300000;
-        const randomInterval = Math.floor(Math.random()*(maxInterval-minInterval+1)+minInterval);
-        setTimeout(()=>{ if(!isTrainerShowing) showTrainer(); scheduleTrainer(); }, randomInterval);
-      }
-
-      function shineRandomUnflippedCards(){
-        const unflippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
-        if(!unflippedCards.length) return;
-        const cardsToShine = [];
-        const count = Math.min(3, Math.max(1, Math.floor(Math.random()*unflippedCards.length)));
-        while(cardsToShine.length < count){
-          const card = unflippedCards[Math.floor(Math.random()*unflippedCards.length)];
-          if(!cardsToShine.includes(card)) cardsToShine.push(card);
+        // Helpers
+        function getUnflippedNumbers(){
+            if(!gameState.flipped || !gameState.numbers) return [];
+            const unflipped = [];
+            gameState.flipped.forEach((f,i)=>{ if(!f) unflipped.push(gameState.numbers[i]); });
+            return unflipped;
         }
-        cardsToShine.forEach(card=>{
-          const front = card.querySelector('.front');
-          front.classList.add('card-shine','card-shine-active');
-          setTimeout(()=>{ front.classList.remove('card-shine-active'); setTimeout(()=>front.classList.remove('card-shine'), 1000); }, 1000);
+
+        function showTrainer(){
+            const unflippedNumbers = getUnflippedNumbers();
+            if(unflippedNumbers.length===0 || isTrainerShowing) return;
+
+            isTrainerShowing = true;
+            const trainerNum = Math.floor(Math.random()*10)+1;
+            theTrainerImage.src = `/static/images/trainer${trainerNum}.gif`;
+
+            const randomNumber = unflippedNumbers[Math.floor(Math.random()*unflippedNumbers.length)];
+            const messages = [
+                `MY POKéDEX DATA SUGGESTS CARD ${randomNumber} IS A STRONG HIT CANDIDATE!`,
+                `RESEARCH SHOWS ${randomNumber} HAS 87% HIT POTENTIAL!`,
+                `ACCORDING TO MY STUDIES, ${randomNumber} IS DUE FOR A HIT!`,
+                `STATISTICALLY, ${randomNumber} MATCHES RECENT HIT PATTERNS!`,
+                `MY POKéMON BATTLE ALGORITHM PREDICTS ${randomNumber} WILL HIT!`,
+                `HMM... ${randomNumber} SHOWS PROMISING HIT CHARACTERISTICS!`,
+                `LAB RESULTS INDICATE ${randomNumber} HAS HIGH HIT ENERGY!`,
+                `THE TYPE ADVANTAGE FAVORS CARD ${randomNumber} FOR A HIT!`,
+                `MY POKéMON BREEDING EXPERIENCE SUGGESTS ${randomNumber}!`,
+                `EVOLUTIONARY PATTERNS POINT TO ${randomNumber} AS NEXT HIT!`,
+                `MY KADABRA'S SPOON BENDS TOWARD ${randomNumber}... IT WILL HIT!`,
+                `I FORESEE CARD ${randomNumber} SHINING WITH HIT ENERGY!`,
+                `MY ESPER POWERS DETECT A HIT COMING FROM ${randomNumber}!`,
+                `THE UNOWN LETTERS FORM ${randomNumber}... IT'S A HIT!`,
+                `MY PSYDUCK'S HEADACHE MEANS ${randomNumber} WILL HIT!`,
+                `THE FUTURE SIGHT ATTACK REVEALS ${randomNumber} AS NEXT HIT!`,
+                `MY DARKRAI'S NIGHTMARE SHOWED ${randomNumber} HITTING!`,
+                `CELEBI'S TIME TRAVEL SHOWS ${randomNumber} AS A PAST HIT!`,
+                `MY GENGAR'S SHADOW POINTS TO ${randomNumber} FOR A HIT!`,
+                `THE LAKE TRIO WHISPERS ${randomNumber} IS THE CHOSEN HIT!`,
+                `WOAH! ${randomNumber} IS TOTALLY GONNA HIT! TRY IT!`,
+                `PIKACHU'S CHEEKS SPARKED AT ${randomNumber} - IT'S A HIT!`,
+                `YAY! ${randomNumber} LOOKS SUPER LUCKY RIGHT NOW!`,
+                `MY POKéMON ARE JUMPING FOR ${randomNumber} TO HIT!`,
+                `COOL! ${randomNumber} HAS THAT WINNING HIT VIBE!`,
+                `AWESOME! MY POKéMON SENSE ${randomNumber} WILL HIT!`,
+                `RADICAL! ${randomNumber} IS PRIMED FOR A BIG HIT!`,
+                `EPIC! ${randomNumber} HAS THAT CHAMPION HIT ENERGY!`,
+                `MY STARTER POKéMON LOVES ${randomNumber} FOR A HIT!`,
+                `WOWZERS! ${randomNumber} IS LOADED WITH HIT POWER!`,
+                `AS A GYM LEADER, I RECOMMEND ${randomNumber} FOR YOUR NEXT HIT!`,
+                `TRAINER, ${randomNumber} IS YOUR BEST STRATEGIC HIT CHOICE!`,
+                `MY BADGE CASE VIBRATES WHEN I SEE ${randomNumber} - POTENTIAL HIT!`,
+                `AFTER 100 BATTLES, I KNOW ${randomNumber} CAN HIT!`,
+                `MY TM CASE SHOWS ${randomNumber} HAS HIT MOVES!`,
+                `A CHAMPION'S INSTINCT SAYS ${randomNumber} WILL HIT!`,
+                `MY TYPE SPECIALIZATION SUGGESTS ${randomNumber} FOR A HIT!`,
+                `TRAINER PROTOCOL: CONSIDER ${randomNumber} FOR MAXIMUM HIT!`,
+                `ELITE TRAINER ANALYSIS: ${randomNumber} IS HIT-READY!`,
+                `GYM CHALLENGE DATA POINTS TO ${randomNumber} AS NEXT HIT!`,
+                `TEAM ROCKET'S SECRET INTEL SAYS ${randomNumber} WILL HIT! *hehe*`,
+                `PREPARE FOR HITNESS! ${randomNumber} IS TODAY'S TROUBLE!`,
+                `MEOWTH'S PAY DAY LANDED ON ${randomNumber} - IT'S A HIT!`,
+                `OUR DARK POKéMON SENSE ${randomNumber} IS RIPE FOR HITTING!`,
+                `TO PROTECT THE HIT FROM DEVASATION... CHOOSE ${randomNumber}!`,
+                `JESSIE'S HAIRSTYLE TODAY FORMS THE NUMBER ${randomNumber}!`,
+                `JAMES' VICTREEBEL POINTS TO ${randomNumber} FOR A HIT!`,
+                `WOBUFFET'S SHADOW REVEALS ${randomNumber} AS NEXT HIT!`,
+                `OUR EVIL PLOT REQUIRES YOU TO PICK ${randomNumber} TO HIT!`,
+                `GIOVANNI'S MASTER PLAN INVOLVES ${randomNumber} HITTING!`
+            ];
+            gameboyText.textContent = messages[Math.floor(Math.random()*messages.length)];
+            trainerOverlay.classList.add('active');
+            gameboyWindow.classList.add('active');
+            trainerSound.currentTime = 0; trainerSound.play().catch(console.error);
+
+            setTimeout(()=>{
+                trainerOverlay.classList.remove('active');
+                gameboyWindow.classList.remove('active');
+                isTrainerShowing = false;
+            }, 4000);
+        }
+
+        function scheduleTrainer(){
+            const minInterval = 60000, maxInterval = 300000;
+            const randomInterval = Math.floor(Math.random()*(maxInterval-minInterval+1)+minInterval);
+            setTimeout(()=>{
+                if(!isTrainerShowing) showTrainer();
+                scheduleTrainer();
+            }, randomInterval);
+        }
+
+        function shineRandomUnflippedCards(){
+            const unflippedCards = Array.from(document.querySelectorAll('.card:not(.flipped)'));
+            if(unflippedCards.length===0) return;
+
+            const cardsToShine = [];
+            const count = Math.min(3, Math.max(1, Math.floor(Math.random()*unflippedCards.length)));
+            while(cardsToShine.length < count){
+                const idx = Math.floor(Math.random()*unflippedCards.length);
+                const card = unflippedCards[idx];
+                if(!cardsToShine.includes(card)) cardsToShine.push(card);
+            }
+            cardsToShine.forEach(card=>{
+                const front = card.querySelector('.front');
+                front.classList.add('card-shine','card-shine-active');
+                setTimeout(()=>{ front.classList.remove('card-shine-active'); setTimeout(()=>front.classList.remove('card-shine'),1000); },1000);
+            });
+        }
+
+        function preloadImages(){
+            for(let i=1;i<=30;i++){ new Image().src = `/static/images/card${i}.png`; }
+            new Image().src = '/static/images/question.gif';
+            new Image().src = '/static/images/hit.gif';
+            for(let i=1;i<=10;i++){ new Image().src = `/static/images/trainer${i}.gif`; }
+            new Image().src = '/static/images/holloween.gif';
+        }
+
+        async function loadGame(){
+            try{
+                const response = await fetch('/get-state');
+                if(!response.ok) throw new Error('Failed to fetch game state');
+                const data = await response.json();
+                if(data.numbers && data.images && data.flipped){
+                    gameState = data; renderCards();
+                }else{ throw new Error('Invalid game state received'); }
+            }catch(err){
+                console.error('Error loading game:', err);
+                gameState = {
+                    numbers:Array.from({length:30},(_,i)=>i+1),
+                    images:Array.from({length:30},(_,i)=>i).sort(()=>Math.random()-0.5),
+                    flipped:Array(30).fill(false)
+                };
+                renderCards();
+            }
+        }
+
+        function renderCards(){
+            cardGrid.innerHTML = '';
+            gameState.numbers.forEach((number, index)=>{
+                const card = document.createElement('div');
+                card.className = `card ${gameState.flipped[index] ? 'flipped' : ''}`;
+                card.dataset.index = index;
+
+                const backSrc = gameState.flipped[index]
+                    ? `/static/images/card${gameState.images[index]+1}.png?v=${Date.now()}`
+                    : '/static/images/question.gif';
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face front">
+                            <img class="corner-gif" src="/static/images/holloween.gif?v=${Date.now()}" alt="Halloween">
+                            ${number}
+                        </div>
+                        <div class="card-face back">
+                            <img class="corner-gif" src="/static/images/holloween.gif?v=${Date.now()}" alt="Halloween">
+                            <img class="card-art" src="${backSrc}" alt="Card ${number}">
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', ()=>flipCard(index));
+                cardGrid.appendChild(card);
+            });
+        }
+
+        async function flipCard(index){
+            if(isFlipping || gameState.flipped[index]) return;
+            isFlipping = true;
+            try{
+                const card = cardGrid.children[index];
+                const inner = card.querySelector('.card-inner');
+                const backImage = card.querySelector('.back img.card-art');
+                const cardNumber = gameState.images[index] + 1;
+                const isSpecialCard = (cardNumber === 1 || cardNumber === 2);
+                const flipDuration = isSpecialCard ? 14500 : 6400;
+                const soundToPlay = isSpecialCard ? hitSound : flipSound;
+
+                clearTimeout(soundTimeout);
+
+                fullscreenImage.src = isSpecialCard ? `/static/images/hit.gif` : '/static/images/question.gif';
+                fullscreenOverlay.classList.add('active');
+                const closeOverlay = () => {
+                    fullscreenOverlay.classList.remove('active');
+                    fullscreenOverlay.removeEventListener('click', closeOverlay);
+                };
+                fullscreenOverlay.addEventListener('click', closeOverlay);
+
+                card.classList.add('flipping');
+                if(isSpecialCard) card.classList.add('long-flip');
+
+                soundToPlay.currentTime = 0; soundToPlay.play().catch(console.error);
+                soundTimeout = setTimeout(()=>{ soundToPlay.pause(); }, flipDuration);
+
+                await new Promise(res=>setTimeout(res, 500));
+                inner.style.transform = 'rotateY(180deg)';
+                card.classList.remove('flipping');
+                if(isSpecialCard) card.classList.remove('long-flip');
+
+                await new Promise(res=>setTimeout(res, flipDuration - 500));
+                fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
+
+                const overlayTimeout = setTimeout(()=>{
+                    fullscreenOverlay.classList.remove('active');
+                    fullscreenOverlay.removeEventListener('click', closeOverlay);
+                }, 3000);
+
+                const response = await fetch('/flip-card', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({ index })
+                });
+                if(!response.ok) throw new Error('Flip update failed');
+
+                backImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
+                card.classList.add('flipped','unflipping');
+                await new Promise(res=>setTimeout(res, 500));
+                card.classList.remove('unflipping');
+                clearTimeout(overlayTimeout);
+
+                const updatedState = await fetch('/get-state').then(r=>r.json());
+                gameState = updatedState;
+
+            }catch(err){
+                console.error('Error flipping card:', err);
+                renderCards();
+                fullscreenOverlay.classList.remove('active');
+            }finally{
+                isFlipping = false;
+            }
+        }
+
+        resetBtn.addEventListener('click', async ()=>{
+            try{
+                await fetch('/reset', { method:'POST' });
+                await loadGame();
+                fullscreenOverlay.classList.remove('active');
+            }catch(err){
+                console.error('Error resetting game:', err);
+                gameState = {
+                    numbers:Array.from({length:30},(_,i)=>i+1),
+                    images:Array.from({length:30},(_,i)=>i).sort(()=>Math.random()-0.5),
+                    flipped:Array(30).fill(false)
+                };
+                renderCards();
+            }
         });
-      }
 
-      function preloadAssets(){
-        for(let i=1;i<=50;i++) new Image().src = `/static/images/card${i}.png`;
-        [
-          '/static/images/question.gif',
-          '/static/images/hit.gif',
-          '/static/images/fire.gif',
-          '/static/images/door.gif',
-          '/static/images/squid.gif'
-        ].forEach(src => { const img = new Image(); img.src = src; });
-        for(let i=1;i<=10;i++) new Image().src = `/static/images/trainer${i}.gif`;
-      }
-
-      async function loadGame(){
-        const failToDefault = ()=>{
-          gameState = {
-            numbers: Array.from({length:TOTAL_CARDS}, (_,i)=>i+1),
-            images:  Array.from({length:TOTAL_CARDS}, (_,i)=>i), // 0..49
-            flipped: Array(TOTAL_CARDS).fill(false)
-          };
-          renderCards();
-        };
-        try{
-          const response = await fetch('/get-state');
-          if(!response.ok) throw new Error('Failed to fetch game state');
-          const data = await response.json();
-          if(Array.isArray(data.numbers) && Array.isArray(data.images) && Array.isArray(data.flipped) && data.numbers.length === TOTAL_CARDS){
-            gameState = data;
-            renderCards();
-          }else{
-            failToDefault();
-          }
-        }catch(err){
-          console.error('Error loading game:', err);
-          failToDefault();
-        }
-      }
-
-      function renderCards(){
-        cardGrid.innerHTML = '';
-        for(let i=0;i<TOTAL_CARDS;i++){
-          const number = gameState.numbers[i];
-          const card = document.createElement('div');
-          card.className = `card ${gameState.flipped[i] ? 'flipped' : ''}`;
-          card.dataset.index = i;
-          card.innerHTML = `
-            <div class="card-inner">
-              <div class="card-face front">${number}</div>
-              <div class="card-face back">
-                <img src="${gameState.flipped[i] ? `/static/images/card${gameState.images[i] + 1}.png?v=${Date.now()}` : '/static/images/question.gif'}" alt="Card ${number}">
-              </div>
-            </div>`;
-          card.addEventListener('click', ()=>flipCard(i));
-          cardGrid.appendChild(card);
-        }
-      }
-
-      async function flipCard(index){
-        if(isFlipping || gameState.flipped[index]) return;
-        isFlipping = true;
-
-        try{
-          const card = cardGrid.children[index];
-          const inner = card.querySelector('.card-inner');
-          const backImage = card.querySelector('.back img');
-          const cardNumber = gameState.images[index] + 1; // assets are 1..50
-
-          // Groups
-          const LONG_HIT_NUMS = new Set([1,2,3,4]);        // long + hit overlay/sound
-          const FIRE_NUMS     = new Set([34,35,36,37,38]); // fire gif -> flipgame2
-          const DOOR_NUMS     = new Set([5,6,39]);         // door -> flipgame3
-          const SQUID_NUMS    = new Set([40,45,46]);       // squid -> flipgame4
-
-          const isDoorCard  = DOOR_NUMS.has(cardNumber);
-          const isSquidCard = SQUID_NUMS.has(cardNumber);
-          const isFireCard  = FIRE_NUMS.has(cardNumber);
-          const isHitCard   = LONG_HIT_NUMS.has(cardNumber);
-
-          // --- DOOR special
-          if(isDoorCard){
-            clearTimeout(soundTimeout);
-            fullscreenImage.src = '/static/images/door.gif';
-            fullscreenOverlay.classList.add('active');
-            try{ doorSound.currentTime = 0; doorSound.play(); }catch(e){}
-            try{
-              await fetch('/flip-card', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ index }) });
-            }catch(e){}
-            setTimeout(()=>{ window.location.href = '/flipgame4'; }, 4000);
-            return;
-          }
-
-          // --- SQUID special
-          if(isSquidCard){
-            clearTimeout(soundTimeout);
-            fullscreenImage.src = '/static/images/squid.gif';
-            fullscreenOverlay.classList.add('active');
-            try{ squidSound.currentTime = 0; squidSound.play(); }catch(e){}
-            try{
-              await fetch('/flip-card', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ index }) });
-            }catch(e){}
-            setTimeout(()=>{ window.location.href = '/flipgame3'; }, 4000);
-            return;
-          }
-
-          // --- FIRE branch -> flipgame2
-          if(isFireCard){
-            clearTimeout(soundTimeout);
-            fullscreenImage.src = '/static/images/fire.gif';
-            fullscreenOverlay.classList.add('active');
-            try{ fireSound.currentTime = 0; fireSound.play(); }catch(e){}
-            try{
-              await fetch('/flip-card', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ index }) });
-            }catch(e){}
-            setTimeout(()=>{ window.location.href = '/flipgame2'; }, 5000);
-            return;
-          }
-
-          // --- Normal / Long-Hit flow
-          const flipDuration = isHitCard ? 14500 : 6400;
-          const soundToPlay  = isHitCard ? hitSound : flipSound;
-
-          const closeOverlay = ()=>{
-            fullscreenOverlay.classList.remove('active');
-            fullscreenOverlay.removeEventListener('click', closeOverlay);
-          };
-
-          clearTimeout(soundTimeout);
-          fullscreenImage.src = isHitCard ? '/static/images/hit.gif' : '/static/images/question.gif';
-          fullscreenOverlay.classList.add('active');
-          fullscreenOverlay.addEventListener('click', closeOverlay);
-          try{ soundToPlay.currentTime = 0; soundToPlay.play(); }catch(e){}
-          if(isHitCard) card.classList.add('long-flip');
-
-          card.classList.add('flipping');
-          soundTimeout = setTimeout(()=>{ try{ soundToPlay.pause(); }catch(e){} }, flipDuration);
-
-          await new Promise(r=>setTimeout(r, 500));
-          inner.style.transform = 'rotateY(180deg)';
-          card.classList.remove('flipping');
-          if(isHitCard) card.classList.remove('long-flip');
-          await new Promise(r=>setTimeout(r, flipDuration - 500));
-
-          fullscreenImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
-          const overlayTimeout = setTimeout(()=>{
-            fullscreenOverlay.classList.remove('active');
-            fullscreenOverlay.removeEventListener('click', closeOverlay);
-          }, 3000);
-
-          const response = await fetch('/flip-card', {
-            method:'POST',
-            headers:{ 'Content-Type':'application/json' },
-            body:JSON.stringify({ index })
-          });
-          if(!response.ok) throw new Error('Flip update failed');
-
-          backImage.src = `/static/images/card${cardNumber}.png?v=${Date.now()}`;
-          card.classList.add('flipped','unflipping');
-          await new Promise(r=>setTimeout(r, 500));
-          card.classList.remove('unflipping');
-          clearTimeout(overlayTimeout);
-
-          const updatedState = await fetch('/get-state').then(r=>r.json());
-          gameState = updatedState;
-
-        }catch(err){
-          console.error('Error flipping card:', err);
-          renderCards();
-          fullscreenOverlay.classList.remove('active');
-        }finally{
-          isFlipping = false;
-        }
-      }
-
-      resetBtn.addEventListener('click', async ()=>{
-        try{
-          await fetch('/reset', { method:'POST' });
-          await loadGame();
-          fullscreenOverlay.classList.remove('active');
-        }catch(error){
-          console.error('Error resetting game:', error);
-          gameState = {
-            numbers: Array.from({length:TOTAL_CARDS}, (_,i)=>i+1),
-            images:  Array.from({length:TOTAL_CARDS}, (_,i)=>i % 50), // FIXED: match 50 assets
-            flipped: Array(TOTAL_CARDS).fill(false)
-          };
-          renderCards();
-        }
-      });
-
-      // Init
-      preloadAssets();
-      loadGame();
-      setInterval(shineRandomUnflippedCards, 7000);
-      setTimeout(shineRandomUnflippedCards, 2000);
-      scheduleTrainer();
+        // Init
+        preloadImages();
+        loadGame();
+        setInterval(shineRandomUnflippedCards, 7000);
+        setTimeout(shineRandomUnflippedCards, 2000);
+        scheduleTrainer();
     });
-  </script>
+    </script>
 </body>
 </html>
