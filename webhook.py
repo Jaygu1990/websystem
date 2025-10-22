@@ -490,6 +490,7 @@ def home():
                 <button class="button" onclick="window.location.href='/OBSqueue'">Go to OBSQueue</button>
                 <button class="button" onclick="window.location.href='/music'">Go to Sound</button>
                 <button class="button" onclick="window.location.href='/flipgame'">Go to Flip</button>
+                <button class="button" onclick="window.location.href='/cards'">Go to Manage Flip</button>
                 <button class="button" onclick="window.location.href='/count'">Go to Count</button>
                 <button class="button" onclick="window.location.href='/count2'">Go to Count 2</button>
             </div>
