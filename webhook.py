@@ -1,7 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 from flask import Flask 
-from flask import request, jsonify, render_template,redirect, url_for,send_from_directory, render_template_string
+from flask import request, jsonify, render_template,redirect, url_for,send_from_directory, render_template_string,flash
 import random
 from flask_socketio import SocketIO, emit
 import logging
@@ -12,7 +12,10 @@ import threading
 from threading import Thread
 from random import shuffle
 from pathlib import Path
+from werkzeug.utils import secure_filename
+import secrets  # Add this import
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(32)  # Add this line - it's REQUIRED for flash() to work
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
 
 
@@ -1059,7 +1062,57 @@ def flip_card():
     
     return jsonify({'success': True, 'state': state})  # Fixed the return statement
 
+# Configuration
+UPLOAD_FOLDER = 'static/images'
+ALLOWED_EXTENSIONS = {'png'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/cards', methods=['GET', 'POST'])
+def manage_cards():
+    if request.method == 'POST':
+        try:
+            card_number = request.form.get('card_number')
+            
+            if not card_number or not card_number.isdigit():
+                flash('Invalid card number', 'error')
+                return redirect(url_for('manage_cards'))
+            
+            card_number = int(card_number)
+            if card_number < 1 or card_number > 30:
+                flash('Card number must be between 1 and 30', 'error')
+                return redirect(url_for('manage_cards'))
+            
+            if 'card_image' not in request.files:
+                flash('No file selected', 'error')
+                return redirect(url_for('manage_cards'))
+            
+            file = request.files['card_image']
+            
+            if file.filename == '':
+                flash('No file selected', 'error')
+                return redirect(url_for('manage_cards'))
+            
+            if file and allowed_file(file.filename):
+                filename = f'card{card_number}.png'
+                filename = secure_filename(filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                file.save(file_path)
+                flash(f'Successfully replaced card{card_number}.png', 'success')
+            else:
+                flash('Only PNG files are allowed', 'error')
+                
+        except Exception as e:
+            flash(f'Error replacing image: {str(e)}', 'error')
+        
+        return redirect(url_for('manage_cards'))
+    
+    return render_template('cards.html')
 
 
 
