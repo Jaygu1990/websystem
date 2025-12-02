@@ -303,7 +303,7 @@
             new Image().src = '/static/images/question.gif';
             new Image().src = '/static/images/hit.gif';
             for(let i=1;i<=10;i++){ new Image().src = `/static/images/trainer${i}.gif`; }
-            new Image().src = '/static/images/holloween.gif';
+            new Image().src = '/static/images/emoji.gif';
         }
 
         async function loadGame(){
@@ -339,11 +339,11 @@
                 card.innerHTML = `
                     <div class="card-inner">
                         <div class="card-face front">
-                            <img class="corner-gif" src="/static/images/holloween.gif?v=${Date.now()}" alt="Halloween">
+                            <img class="corner-gif" src="/static/images/emoji.gif?v=${Date.now()}" alt="Halloween">
                             ${number}
                         </div>
                         <div class="card-face back">
-                            <img class="corner-gif" src="/static/images/holloween.gif?v=${Date.now()}" alt="Halloween">
+                            <img class="corner-gif" src="/static/images/emoji.gif?v=${Date.now()}" alt="Halloween">
                             <img class="card-art" src="${backSrc}" alt="Card ${number}">
                         </div>
                     </div>

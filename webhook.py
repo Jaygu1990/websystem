@@ -1076,6 +1076,41 @@ def allowed_file(filename):
 def manage_cards():
     if request.method == 'POST':
         try:
+            # 🔹 1. Special GIF assets branch
+            if 'special_asset' in request.form:
+                asset_name = request.form.get('special_asset', '')
+
+                # Only allow these three filenames
+                allowed_assets = {'emoji.gif', 'question.gif', 'background.gif'}
+                if asset_name not in allowed_assets:
+                    flash('Invalid asset selected', 'error')
+                    return redirect(url_for('manage_cards'))
+
+                if 'asset_file' not in request.files:
+                    flash('No file selected', 'error')
+                    return redirect(url_for('manage_cards'))
+
+                file = request.files['asset_file']
+
+                if file.filename == '':
+                    flash('No file selected', 'error')
+                    return redirect(url_for('manage_cards'))
+
+                # Make sure it's a GIF
+                if not file.filename.lower().endswith('.gif'):
+                    flash('Only GIF files are allowed for this asset', 'error')
+                    return redirect(url_for('manage_cards'))
+
+                filename = secure_filename(asset_name)  # keep the original name
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                file.save(file_path)
+                flash(f'Successfully replaced {filename}', 'success')
+
+                return redirect(url_for('manage_cards'))
+
+            # 🔹 2. Normal numbered card PNGs (your original logic)
             card_number = request.form.get('card_number')
             
             if not card_number or not card_number.isdigit():
@@ -1097,7 +1132,7 @@ def manage_cards():
                 flash('No file selected', 'error')
                 return redirect(url_for('manage_cards'))
             
-            if file and allowed_file(file.filename):
+            if file and allowed_file(file.filename):  # assume this is .png only
                 filename = f'card{card_number}.png'
                 filename = secure_filename(filename)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -1114,6 +1149,7 @@ def manage_cards():
         return redirect(url_for('manage_cards'))
     
     return render_template('cards.html')
+
 
 
 

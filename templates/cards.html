@@ -121,5 +121,35 @@
         </div>
         {% endfor %}
     </div>
+
+    <h2>Special Assets</h2>
+
+    <div class="cards-grid">
+        {% set special_assets = [
+            {'filename': 'emoji.gif', 'label': 'emoji.gif'},
+            {'filename': 'question.gif', 'label': 'question.gif'},
+            {'filename': 'background.gif', 'label': 'background.gif'}
+        ] %}
+
+        {% for asset in special_assets %}
+        <div class="card-item">
+            <div class="card-name">{{ asset.label }}</div>
+
+            <img src="{{ url_for('static', filename='images/' ~ asset.filename) }}"
+                alt="{{ asset.label }}"
+                class="card-image"
+                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='">
+
+            <form class="upload-form" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="special_asset" value="{{ asset.filename }}">
+                <input type="file" name="asset_file" accept=".gif" class="file-input" required>
+                <button type="submit" class="upload-btn">Replace Image</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+
+
 </body>
 </html>

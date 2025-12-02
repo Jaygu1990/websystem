@@ -17,21 +17,23 @@ def print_text(customer_data):
     hprinter_dc.StartPage()
     
     # Extract selected fields from the customer data
-    first_name = customer_data.get("first_name", "N/A")
-    last_name = customer_data.get("last_name", "N/A")
-    quantity = customer_data.get("quantity", "N/A")
-    product_name = customer_data.get("product_name", "N/A")
-    city = customer_data.get("city", "N/A")
-    state = customer_data.get("state", "N/A")
+    order_id     = str(customer_data.get("id", "N/A"))
+    first_name   = str(customer_data.get("first_name", "N/A"))
+    last_name    = str(customer_data.get("last_name", "N/A"))
+    quantity     = str(customer_data.get("quantity", "N/A"))
+    product_name = str(customer_data.get("product_name", "N/A"))
+    city         = str(customer_data.get("city", "N/A"))
+    state        = str(customer_data.get("state", "N/A"))
     
     # Prepare the order details to print
     order_details = [
+        f"Order ID: {order_id}",
         f"First Name: {first_name}",
         f"Last Name: {last_name}",
         f"Quantity: {quantity}",
-        f"Product Name: {product_name}",
+        f"Product: {product_name}",
         f"City: {city}",
-        f"State: {state}"
+        f"State: {state}",
     ]
     
     y_offset = 100  # Start position for printing
@@ -59,6 +61,11 @@ def print_text(customer_data):
     
     # Print each detail, wrapping long lines
     for detail in order_details:
+        
+        # ✅ If it's the first line (Order ID), reset y
+        if detail.startswith("Order ID:"):
+            y_offset = 100
+        
         # Wrap the text if it's too long
         wrapped_lines = wrap_text(detail, max_line_length)
         
