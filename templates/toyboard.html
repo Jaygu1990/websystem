@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre Order List</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('/static/images/rules.png') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ==== MAIN FLEX LAYOUT ==== */
+        .container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* ==== LEFT GIF PANEL ==== */
+        .gif-column {
+            width: 35%;
+            padding-top: 40px;
+            padding-left: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .gif-column img {
+            width: 40%;
+            border: 4px solid white;
+            border-radius: 10px;
+            box-shadow: 4px 4px 0px black;
+        }
+
+        /* ==== RIGHT CONTENT ==== */
+        .right-panel {
+            width: 40%;
+            padding-top: 40px;
+            padding-right: 300px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-top: 20px;
+            display: inline-block;
+            padding: 12px 20px;
+            background: black;
+            border: 4px solid white;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 85%;
+            margin: 30px auto;
+            border-collapse: collapse;
+            background: #f8f8f8;
+            border: 4px solid black;
+            border-radius: 10px;
+            box-shadow: 6px 6px 0px black;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 14px;
+            text-align: center;
+            border: 2px solid black;
+            font-size: 14px;
+            color: black;
+        }
+
+        th {
+            background-color: #fdd835;
+        }
+
+        tr:nth-child(even) { background-color: #f8f8f8; }
+        tr:nth-child(odd) { background-color: #e8e8e8; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- LEFT SIDE GIFS -->
+    <div class="gif-column">
+        <img src="/static/images/Toy1.gif" alt="Toy 1">
+        <img src="/static/images/Toy2.gif" alt="Toy 2">
+        <img src="/static/images/Toy3.gif" alt="Toy 3">
+        <img src="/static/images/Toy4.gif" alt="Toy 4">
+    </div>
+
+    <!-- RIGHT SIDE CONTENT -->
+    <div class="right-panel">
+
+
+        <table id="queue-table">
+            <tr>
+                <th>Quantity</th>
+                <th>Product</th>
+                <th>Name</th>
+            </tr>
+            {% for item in preorder %}
+            <tr id="row-{{ loop.index0 }}">
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ item.first_name }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<script>
+function fetchQueue() {
+    fetch('/toyqueue_data')
+        .then(response => response.json())
+        .then(data => {
+            let table = document.getElementById("queue-table");
+            table.innerHTML = `<tr><th>Quantity</th><th>Product</th><th>Name</th></tr>`;
+            data.preorder.forEach((item, index) => {
+                let row = document.createElement("tr");
+                row.id = `row-${index}`;
+                row.innerHTML =
+                    `<td>${item.quantity}</td>
+                     <td>${item.product_name}</td>
+                     <td>${item.first_name}</td>`;
+                table.appendChild(row);
+            });
+        });
+}
+setInterval(fetchQueue, 3000);
+</script>
+
+</body>
+</html>

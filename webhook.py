@@ -1,7 +1,8 @@
+from __future__ import annotations
 import eventlet
 eventlet.monkey_patch()
 from flask import Flask 
-from flask import request, jsonify, render_template,redirect, url_for,send_from_directory, render_template_string,flash
+from flask import request, jsonify, render_template,redirect, url_for,send_from_directory, render_template_string,flash, abort
 import random
 from flask_socketio import SocketIO, emit
 import logging
@@ -14,6 +15,12 @@ from random import shuffle
 from pathlib import Path
 from werkzeug.utils import secure_filename
 import secrets  # Add this import
+import sqlite3, json
+from datetime import datetime, date, time, timedelta, timezone
+from typing import Optional, Iterable, Tuple, Any
+
+from schedule_bp import schedule_bp, init_db
+
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)  # Add this line - it's REQUIRED for flash() to work
 socketio = SocketIO(app, async_mode='eventlet', logger=True, engineio_logger=True)
@@ -28,8 +35,8 @@ user_list_holder = []
 game_queue = []
 followers = set()
 preorder = []
-count=0
-count2=0
+count=1504
+count2=131
 
 # client = TikTokLiveClient(unique_id="@tcgcardsflowcanada")
 # List of Pokémon names (you can add more to the list)
@@ -52,6 +59,7 @@ def webhook():
     global count
     global count2
     data = request.json
+    global group_buy_sold
     print("Received Webhook:", data)
     
     nums = len(data['line_items'])
@@ -112,6 +120,8 @@ def webhook():
                 user_list.append(first_name.split()[0])
             if product_name == "Pokemon Card TCG S-Chinese Horizons Gemstone Booster Box V2 (Chinese) - PRE ORDER":
                 preorder.append(customer_data)
+            if product_name == 'Group Buy':
+                groupbuy_add_sold(int(quantity))
 
                           
             # Add to game_queue only if the product is "draw"
@@ -127,7 +137,7 @@ def add_order():
     dummy_order = {
         "id": random.randint(1000, 9999),  # Generate a random order ID
         "completed": False,
-        "product_name": "Pokemon Card Chinese 151 Surprise Slim Sealed Booster Pack V3 (Chinese) - OPEN LIVE",
+        "product_name": 'Group Buy',
         "quantity": random.randint(1, 5),  # Random quantity between 1 and 5
         "first_name": "John",
         "last_name": "Doe",
@@ -141,6 +151,7 @@ def add_order():
     user_list.append(first_name.split()[0])
     preorder.append(dummy_order)
     count+=dummy_order['quantity']
+    groupbuy_add_sold(int(dummy_order['quantity']))
     
     return jsonify({"message": "Dummy order added", "order": dummy_order})
 
@@ -479,6 +490,7 @@ def home():
                 <img src="/static/images/ash.png" alt="Ash" class="ash-image">
             </div>
             <div class="button-container">
+                <button class="button" onclick="window.location.href='/schedule'">Go to Schedule</button>
                 <button class="button" onclick="window.location.href='/queue'">Go to Queue</button>
                 <button class="button" onclick="window.location.href='/queueforviewers'">Go to Queue for viewers</button>
                 <button class="button" onclick="window.location.href='/game'">Go to Game</button>
@@ -493,6 +505,10 @@ def home():
                 <button class="button" onclick="window.location.href='/cards'">Go to Manage Flip</button>
                 <button class="button" onclick="window.location.href='/count'">Go to Count</button>
                 <button class="button" onclick="window.location.href='/count2'">Go to Count 2</button>
+                <button class="button" onclick="window.location.href='/toyqueue'">Go to Toy Queue</button>
+                <button class="button" onclick="window.location.href='/toyOBSqueue'">Go to Toy OBSQueue</button>
+                <button class="button" onclick="window.location.href='/toyboard'">Go to Toy Board</button>
+                <button class="button" onclick="window.location.href='/group-buy'">Go to Group Buy</button>
             </div>
         </body>
     </html>
@@ -1151,6 +1167,590 @@ def manage_cards():
     return render_template('cards.html')
 
 
+toyqueue = []
+toyprint_jobs = []
+
+
+@app.route('/webhook2', methods=['POST'])
+def webhook2():
+    data = request.get_json(silent=True) or {}
+    print("Received Webhook:", data)
+
+    line_items = data.get('line_items') or []
+    for item in line_items:
+        # Extract necessary information with safe defaults
+        product_name = (item.get('name') or '').strip()
+        quantity = item.get('quantity', 0)
+
+        shipping = data.get('shipping_address') or {}
+        first_name = shipping.get('first_name') or "NA"
+        last_name = shipping.get('last_name') or "NA"
+        city = shipping.get('city') or "NA"
+        state = shipping.get('province') or "NA"
+
+        toycustomer_data = {
+            "id": data.get("id"),
+            "completed": False,
+            "product_name": product_name,
+            "quantity": quantity,
+            "first_name": first_name,
+            "last_name": last_name,
+            "city": city,
+            "state": state,
+        }
+
+        toyqueue.append(toycustomer_data)
+        if product_name.lower() != "shipping":
+            toyprint_jobs.append(toycustomer_data)
+
+    return jsonify({"status": "success"}), 200
+
+
+
+@app.route('/toyqueue', methods=['GET'])
+def toyget_queue():
+    return render_template('toyqueue.html', queue=toyqueue)
+
+
+@app.route('/toyqueue_data', methods=['GET'])
+def toyqueue_data():
+    return jsonify({"toyqueue": toyqueue})
+
+
+@app.route('/toycomplete/<int:index>', methods=['POST'])
+def toycomplete_order(index):
+    if 0 <= index < len(toyqueue):
+        toyqueue[index]["completed"] = True
+    return '', 204
+
+
+
+@app.route('/toyclear_queue', methods=['POST'])
+def toyclear_queue():
+    toyqueue.clear()
+    print_jobs.clear()
+    return '', 204
+
+
+
+@app.route('/toyOBSqueue')
+def toyobs_queue():
+    return render_template('toyOBSqueue.html', queue=toyqueue)
+
+
+@app.route('/toyboard')
+def toyboard():
+    return render_template('toyboard.html', queue=toyqueue)
+
+
+@app.route("/toyget_print_jobs", methods=["GET"])
+def toyget_print_jobs():
+    return jsonify(toyprint_jobs), 200
+
+DB_PATH = "groupbuy.db"
+
+TOTAL_BOXES = 60
+BASE_PRICE = 130
+TIER_SIZE = 10
+DROP_PER_TIER = 5
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def db_conn():
+    conn = sqlite3.connect(DB_PATH, isolation_level=None)  # autocommit
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")  # better concurrency
+    return conn
+
+
+def init_groupbuy_db():
+    conn = db_conn()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS group_buy (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            total INTEGER NOT NULL,
+            sold INTEGER NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    row = conn.execute("SELECT id FROM group_buy WHERE id=1").fetchone()
+    if row is None:
+        conn.execute(
+            "INSERT INTO group_buy (id, total, sold, updated_at) VALUES (1, ?, ?, ?)",
+            (TOTAL_BOXES, 0, now_iso())
+        )
+    else:
+        # Always sync DB total to code total
+        conn.execute(
+            "UPDATE group_buy SET total = ?, updated_at = ? WHERE id=1",
+            (TOTAL_BOXES, now_iso())
+        )
+    conn.close()
+
+
+def calc_price(sold: int) -> int:
+    tiers = sold // TIER_SIZE
+    return BASE_PRICE - tiers * DROP_PER_TIER
+
+
+def groupbuy_add_sold(qty: int) -> None:
+    """Atomic sold += qty, prevents oversell"""
+    qty = int(qty)
+    if qty <= 0:
+        return
+
+    conn = db_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE;")  # lock for atomic update
+        row = conn.execute("SELECT total, sold FROM group_buy WHERE id=1").fetchone()
+        total = int(row["total"])
+        sold = int(row["sold"])
+
+        if sold + qty > total:
+            # If you prefer to allow oversell, remove this check
+            raise ValueError(f"Oversold: {sold}+{qty}>{total}")
+
+        conn.execute(
+            "UPDATE group_buy SET sold = sold + ?, updated_at = ? WHERE id=1",
+            (qty, now_iso())
+        )
+        conn.execute("COMMIT;")
+    except Exception:
+        try:
+            conn.execute("ROLLBACK;")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+
+def groupbuy_get_state():
+    conn = db_conn()
+    row = conn.execute("SELECT total, sold, updated_at FROM group_buy WHERE id=1").fetchone()
+    conn.close()
+
+    total = int(row["total"])
+    sold = max(0, min(total, int(row["sold"])))
+    return {
+        "total": total,
+        "sold": sold,
+        "remaining": total - sold,
+        "price": calc_price(sold),
+        "base_price": BASE_PRICE,
+        "tier_size": TIER_SIZE,
+        "drop_per_tier": DROP_PER_TIER,
+        "updated_at": row["updated_at"],
+    }
+
+@app.get("/group-buy")
+def group_buy_page():
+    return render_template("group_buy.html")
+
+@app.get("/api/group-buy-status")
+def group_buy_status():
+    return jsonify(groupbuy_get_state())
+
+def groupbuy_add_one():
+    conn = db_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE;")
+        row = conn.execute("SELECT total, sold FROM group_buy WHERE id=1").fetchone()
+        total = int(row["total"])
+        sold = int(row["sold"])
+
+        if sold + 1 > total:
+            raise ValueError("Oversold")
+
+        conn.execute(
+            "UPDATE group_buy SET sold = sold + 1, updated_at = ? WHERE id=1",
+            (now_iso(),)
+        )
+        conn.execute("COMMIT;")
+    except Exception:
+        try:
+            conn.execute("ROLLBACK;")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+
+def groupbuy_minus_one():
+    conn = db_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE;")
+        row = conn.execute("SELECT sold FROM group_buy WHERE id=1").fetchone()
+        sold = int(row["sold"])
+
+        if sold - 1 < 0:
+            raise ValueError("Sold cannot be negative")
+
+        conn.execute(
+            "UPDATE group_buy SET sold = sold - 1, updated_at = ? WHERE id=1",
+            (now_iso(),)
+        )
+        conn.execute("COMMIT;")
+    except Exception:
+        try:
+            conn.execute("ROLLBACK;")
+        except Exception:
+            pass
+        raise
+    finally:
+        conn.close()
+
+ADMIN_SECRET = "6888richmond" 
+
+@app.route("/api/group-buy/plus-one", methods=["POST"])
+def api_groupbuy_plus_one():
+    data = request.get_json(silent=True) or {}
+    if data.get("secret") != ADMIN_SECRET:
+        return jsonify({"error": "forbidden"}), 403
+
+    try:
+        groupbuy_add_one()
+    except ValueError as e:
+        return jsonify({"error": str(e), "state": groupbuy_get_state()}), 409
+    except Exception as e:
+        # 让你调试更直观（可保留）
+        return jsonify({"error": "server_error", "detail": str(e)}), 500
+
+    return jsonify({"status": "ok", "state": groupbuy_get_state()}), 200
+
+
+@app.route("/api/group-buy/minus-one", methods=["POST"])
+def api_groupbuy_minus_one():
+    data = request.get_json(silent=True) or {}
+    if data.get("secret") != ADMIN_SECRET:
+        return jsonify({"error": "forbidden"}), 403
+
+    try:
+        groupbuy_minus_one()
+    except ValueError as e:
+        return jsonify({"error": str(e), "state": groupbuy_get_state()}), 409
+    except Exception as e:
+        return jsonify({"error": "server_error", "detail": str(e)}), 500
+
+    return jsonify({"status": "ok", "state": groupbuy_get_state()}), 200
+
+
+
+# import uuid
+# from datetime import datetime, date, time, timedelta
+# try:
+#     from zoneinfo import ZoneInfo
+# except Exception:
+#     from backports.zoneinfo import ZoneInfo
+    
+# BASE_DIR = Path(__file__).resolve().parent
+# template_folder=str(BASE_DIR / "templates")
+# static_folder=str(BASE_DIR / "static") 
+# TZ = ZoneInfo("America/Vancouver")
+# MIN_DATE = date(2025, 10, 1)
+# MAX_DATE = date(2030, 12, 31)
+
+# BOOKINGS: list[dict] = []
+
+# def week_start_for(d: date) -> date:
+#     return d - timedelta(days=d.weekday())  # Monday
+
+# def clamp_date_to_range(d: date) -> date:
+#     if d < MIN_DATE: return MIN_DATE
+#     if d > MAX_DATE: return MAX_DATE
+#     return d
+
+# def parse_iso_local(dt_str: str) -> datetime:
+#     """
+#     Accept 'YYYY-MM-DDTHH:MM' (naive) or full ISO with offset.
+#     Naive -> assume local TZ. Aware -> convert to local TZ.
+#     """
+#     dt = datetime.fromisoformat(dt_str)
+#     if dt.tzinfo is None:
+#         return dt.replace(tzinfo=TZ)
+#     return dt.astimezone(TZ)
+
+# def minute_key(dt: datetime) -> str:
+#     """Normalize to local TZ, drop seconds, keep minute precision."""
+#     return dt.astimezone(TZ).replace(second=0, microsecond=0).isoformat(timespec="minutes")
+
+# def overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
+#     return a_start < b_end and b_start < a_end
+
+# def within_allowed_window(start_dt: datetime, end_dt: datetime) -> bool:
+#     return (MIN_DATE <= start_dt.date() <= MAX_DATE) and (MIN_DATE <= end_dt.date() <= MAX_DATE)
+
+# def is_series(rec: dict) -> bool:
+#     return rec.get("series_id") == rec.get("id") and "repeat" in rec
+
+# def series_occurrences(series: dict, range_start: datetime, range_end: datetime):
+#     """Yield (occ_start, occ_end) for series within [range_start, range_end)."""
+#     assert is_series(series)
+#     freq = series["repeat"]["freq"]
+#     until_d: date = series["repeat"]["until"]
+#     exceptions = series.get("exceptions", set())
+
+#     base_start: datetime = series["start_dt"]
+#     base_end: datetime = series["end_dt"]
+#     delta = base_end - base_start
+
+#     if freq == "DAILY":
+#         step = timedelta(days=1)
+#         cur = base_start
+#         if base_start < range_start:
+#             days = int((range_start - base_start).total_seconds() // 86400)
+#             cur = base_start + timedelta(days=days)
+#             if cur < range_start:
+#                 cur += step
+#     elif freq == "WEEKLY":
+#         step = timedelta(weeks=1)
+#         cur = base_start
+#         if base_start < range_start:
+#             days = int((range_start - base_start).total_seconds() // 86400)
+#             weeks = days // 7
+#             cur = base_start + timedelta(weeks=weeks)
+#             while cur < range_start:
+#                 cur += step
+#     else:
+#         return
+
+#     end_limit = min(until_d, MAX_DATE)
+#     while cur.date() <= end_limit and cur < range_end:
+#         occ_start = cur
+#         occ_end = cur + delta
+#         key = minute_key(occ_start)
+#         if key not in exceptions:
+#             if overlaps(occ_start, occ_end, range_start, range_end):
+#                 yield (occ_start, occ_end)
+#         cur += step
+
+# def expand_bookings(range_start: datetime, range_end: datetime):
+#     items = []
+#     for b in BOOKINGS:
+#         if is_series(b):
+#             for occ_start, occ_end in series_occurrences(b, range_start, range_end):
+#                 items.append({
+#                     "id": b["id"],  # series id
+#                     "title": b["title"],
+#                     "start": occ_start.isoformat(),
+#                     "end": occ_end.isoformat(),
+#                     "series_id": b["series_id"],
+#                     "repeating": True,
+#                     "is_occurrence": True,
+#                 })
+#         else:
+#             if overlaps(b["start_dt"], b["end_dt"], range_start, range_end):
+#                 items.append({
+#                     "id": b["id"],
+#                     "title": b["title"],
+#                     "start": b["start_dt"].isoformat(),
+#                     "end": b["end_dt"].isoformat(),
+#                     "series_id": None,
+#                     "repeating": False,
+#                     "is_occurrence": False,
+#                 })
+#     return items
+
+# def conflict_any(start_dt: datetime, end_dt: datetime) -> dict | None:
+#     # Singles
+#     for b in BOOKINGS:
+#         if not is_series(b) and overlaps(start_dt, end_dt, b["start_dt"], b["end_dt"]):
+#             return {"id": b["id"], "title": b["title"], "start": b["start_dt"].isoformat(), "end": b["end_dt"].isoformat()}
+#     # Series (expand near candidate)
+#     window_start = start_dt - timedelta(days=14)
+#     window_end = end_dt + timedelta(days=14)
+#     for b in BOOKINGS:
+#         if is_series(b):
+#             for occ_start, occ_end in series_occurrences(b, window_start, window_end):
+#                 if overlaps(start_dt, end_dt, occ_start, occ_end):
+#                     return {"id": b["id"], "title": b["title"], "start": occ_start.isoformat(), "end": occ_end.isoformat()}
+#     return None
+
+# def conflict_series(proto_series: dict) -> dict | None:
+#     base_start = proto_series["start_dt"]
+#     base_end = proto_series["end_dt"]
+#     until_d = proto_series["repeat"]["until"]
+#     freq = proto_series["repeat"]["freq"]
+
+#     step = timedelta(days=1) if freq == "DAILY" else timedelta(weeks=1)
+#     horizon_end = datetime.combine(min(until_d, MAX_DATE), time(23, 59), tzinfo=TZ)
+#     cur = base_start
+#     while cur <= horizon_end:
+#         occ_start = cur
+#         occ_end = cur + (base_end - base_start)
+#         c = conflict_any(occ_start, occ_end)
+#         if c:
+#             return c
+#         cur += step
+#     return None
+
+# @app.get("/schedule")
+# def schedule_page():
+#     today_local = clamp_date_to_range(datetime.now(TZ).date())
+#     qs = request.args.get("weekStart")
+#     if qs:
+#         try:
+#             requested = date.fromisoformat(qs)
+#         except ValueError:
+#             requested = today_local
+#     else:
+#         requested = today_local
+
+#     ws = week_start_for(requested)
+#     if ws > MAX_DATE:
+#         ws = week_start_for(MAX_DATE)
+#     if (ws + timedelta(days=6)) < MIN_DATE:
+#         ws = week_start_for(MIN_DATE)
+
+#     return render_template(
+#         "schedule.html",
+#         week_start=ws.isoformat(),
+#         min_date=MIN_DATE.isoformat(),
+#         max_date=MAX_DATE.isoformat(),
+#     )
+
+# @app.get("/api/bookings")
+# def api_get_bookings():
+#     qs = request.args.get("weekStart")
+#     if not qs:
+#         return jsonify({"error": "weekStart is required"}), 400
+#     try:
+#         ws = date.fromisoformat(qs)
+#     except ValueError:
+#         return jsonify({"error": "Invalid weekStart"}), 400
+#     ws = week_start_for(ws)
+#     start = datetime.combine(ws, time(0, 0), tzinfo=TZ)
+#     end = start + timedelta(days=7)
+#     return jsonify({"items": expand_bookings(start, end)})
+
+# @app.post("/api/bookings")
+# def api_create_booking():
+#     data = request.get_json(silent=True) or {}
+#     title = (data.get("title") or "").strip() or "Booking"
+#     start_str = data.get("start")
+#     end_str = data.get("end")
+#     repeat = data.get("repeat")  # None or {"freq":"DAILY"/"WEEKLY","until":"YYYY-MM-DD"}
+
+#     if not start_str or not end_str:
+#         return jsonify({"error": "start and end are required"}), 400
+
+#     try:
+#         start_dt = parse_iso_local(start_str)
+#         end_dt = parse_iso_local(end_str)
+#     except Exception:
+#         return jsonify({"error": "Invalid datetime format"}), 400
+
+#     if end_dt <= start_dt:
+#         return jsonify({"error": "End must be after start"}), 400
+#     if not within_allowed_window(start_dt, end_dt):
+#         return jsonify({"error": "Booking must be within allowed window"}), 400
+
+#     # Repeating series
+#     if repeat:
+#         freq = (repeat.get("freq") or "").upper()
+#         if freq not in ("DAILY", "WEEKLY"):
+#             return jsonify({"error": "repeat.freq must be DAILY or WEEKLY"}), 400
+#         try:
+#             until_d = date.fromisoformat(repeat.get("until", ""))
+#         except Exception:
+#             return jsonify({"error": "repeat.until must be YYYY-MM-DD"}), 400
+#         if until_d < start_dt.date():
+#             return jsonify({"error": "repeat.until must be on/after start date"}), 400
+
+#         proto = {
+#             "id": None,
+#             "title": title,
+#             "start_dt": start_dt,
+#             "end_dt": end_dt,
+#             "series_id": None,
+#             "repeat": {"freq": freq, "until": until_d},
+#             "exceptions": set(),
+#         }
+#         c = conflict_series(proto)
+#         if c:
+#             return jsonify({"error": "Time conflict in series", "conflicts_with": c}), 409
+
+#         series_id = str(uuid.uuid4())
+#         BOOKINGS.append({
+#             "id": series_id,
+#             "title": title,
+#             "start_dt": start_dt,
+#             "end_dt": end_dt,
+#             "series_id": series_id,
+#             "repeat": {"freq": freq, "until": until_d},
+#             "exceptions": set(),
+#         })
+#         return jsonify({"ok": True, "id": series_id, "series": True})
+
+#     # Single booking
+#     c = conflict_any(start_dt, end_dt)
+#     if c:
+#         return jsonify({"error": "Time conflict", "conflicts_with": c}), 409
+
+#     new_id = str(uuid.uuid4())
+#     BOOKINGS.append({
+#         "id": new_id,
+#         "title": title,
+#         "start_dt": start_dt,
+#         "end_dt": end_dt,
+#         "series_id": None,
+#     })
+#     return jsonify({"ok": True, "id": new_id})
+
+# @app.delete("/api/bookings/<booking_id>")
+# def api_delete_booking(booking_id: str):
+#     """
+#     Delete a single booking, a whole series, or one occurrence from a series.
+#       - scope=single (default)                      delete non-repeating booking by id
+#       - scope=series                                delete entire series by id
+#       - scope=occurrence&occurrenceStart=YYYY-MM-DDTHH:MM  delete one occurrence
+#     """
+#     scope = request.args.get("scope", "single")
+
+#     if scope == "single":
+#         global BOOKINGS
+#         before = len(BOOKINGS)
+#         BOOKINGS = [b for b in BOOKINGS if not (b["id"] == booking_id and not is_series(b))]
+#         if len(BOOKINGS) == before:
+#             return jsonify({"error": "Not found or not a single booking"}), 404
+#         return jsonify({"ok": True})
+
+#     if scope == "series":
+#         for i, b in enumerate(BOOKINGS):
+#             if b["id"] == booking_id and is_series(b):
+#                 BOOKINGS.pop(i)
+#                 return jsonify({"ok": True})
+#         return jsonify({"error": "Series not found"}), 404
+
+#     if scope == "occurrence":
+#         occ_start_str = request.args.get("occurrenceStart")
+#         if not occ_start_str:
+#             return jsonify({"error": "occurrenceStart is required"}), 400
+#         try:
+#             occ_start = parse_iso_local(occ_start_str)
+#         except Exception:
+#             return jsonify({"error": "Invalid occurrenceStart"}), 400
+
+#         for b in BOOKINGS:
+#             if b["id"] == booking_id and is_series(b):
+#                 b.setdefault("exceptions", set())
+#                 b["exceptions"].add(minute_key(occ_start))
+#                 return jsonify({"ok": True})
+#         return jsonify({"error": "Series not found"}), 404
+
+#     return jsonify({"error": "Invalid scope"}), 400
+
+
+
+
+
+
+app.register_blueprint(schedule_bp, url_prefix="")  # keeps frontend URLs identical
+
 
 
 if __name__ == '__main__':
@@ -1158,7 +1758,9 @@ if __name__ == '__main__':
     import eventlet
     import eventlet.wsgi
     eventlet.monkey_patch()  # Critical for eventlet to handle concurrency properly
-    
+    init_groupbuy_db()
+    init_db(app)
     # Use `socketio.run()` with `eventlet` explicitly specified
     socketio.run(app, host='0.0.0.0', port=5000)
+    
 

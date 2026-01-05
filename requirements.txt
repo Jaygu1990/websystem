@@ -19,3 +19,8 @@ python-vlc>=3.0.0     # Audio playback and volume control
 python-dateutil>=2.8  # Robust datetime handling
 pytz>=2023.3          # Timezone support
 
+# Timezone database to ensure "America/Vancouver" works everywhere
+tzdata>=2024.1
+
+# Backport for Python < 3.9 (safe to include; only used if needed)
+backports.zoneinfo>=0.2.1; python_version < "3.9"

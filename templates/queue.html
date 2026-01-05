@@ -39,6 +39,7 @@
     .status-badge{
       margin-left:6px; padding:4px 8px; border-radius:999px;
       background:#0b1220; border:1px solid #1f2937; font-size:12px; color:#e5e7eb;
+      display:inline-block;
     }
 
     /* Toggle switch */
@@ -54,30 +55,43 @@
     .switch input:checked + .slider{ background:#065f46; border-color:#065f46; }
     .switch input:checked + .slider:before{ transform: translateX(24px); }
     /* ====== /Config panel styling ====== */
+
+    /* Buttons */
+    #buttons-container1{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+    #buttons-container1 button{
+      padding:8px 10px; border:1px solid #111; background:#fff; cursor:pointer; border-radius:8px;
+    }
+    #buttons-container1 button:hover{ background:#f3f4f6; }
   </style>
 </head>
 <body>
-  <h1 style="display:flex; align-items:center; justify-content:center; gap:20px;">
-    Queue Table
-  </h1>
+  <h1 style="display:flex; align-items:center; justify-content:center; gap:20px;">Queue Table</h1>
 
   <div id="buttons-container1">
     <button id="clear_list" onclick="clearQueue()">Clear Queue Table</button>
     <button id="battle" onclick="clearBattle()">Clear Battle</button>
-    <button id="Energy" onclick="Energy()">Run Energy</button>
+    <button id="Energy" onclick="runEnergy()">Run Energy</button>
     <button id="Preorder" onclick="clearPreorder()">Clear Pre Order</button>
+
     <button id="Add" onclick="addCount()">Add Count</button>
     <button id="Minus" onclick="minusCount()">Minus Count</button>
 
     <button id="Add2" onclick="addCount2()">Add Count 2</button>
     <button id="Minus2" onclick="minusCount2()">Minus Count 2</button>
+
+    <button id="btnPlus" type="button">+1 Group Sold</button>
+    <button id="btnMinus" type="button">-1 Group Sold</button>
+
+    <span class="status-badge" id="gbSoldBadge">Group Sold: …</span>
+    <span class="status-badge" id="adminMsg" style="display:none;"></span>
   </div>
 
   <!-- Config Panel for /api/pokeball_config -->
   <div id="pokeball-config" class="config-card">
     <div class="config-row">
       <div>
-        <div class="config-title">Gate  1</div>
+        <div class="config-title">Gate 1</div>
+        <div class="config-subtitle">Toggle gate_id1_last10</div>
       </div>
       <label class="switch" title="Toggle gate_id1_last10">
         <input type="checkbox" id="pkcfg_gateToggle"/>
@@ -120,49 +134,68 @@
   </table>
 
   <script>
+    // -----------------------
+    // Queue functions
+    // -----------------------
     function markAsDone(index){
-      fetch(`/complete/${index}`,{method:'POST'})
-      .then(r=>{if(r.ok){document.getElementById(`status-${index}`).innerHTML='<span class="done-mark">✔ All Done</span>';}})
+      fetch(`/complete/${index}`, { method:'POST' })
+        .then(r => {
+          if(r.ok){
+            document.getElementById(`status-${index}`).innerHTML = '<span class="done-mark">✔ All Done</span>';
+          }
+        });
     }
 
     function fetchQueue(){
       fetch('/queue_data')
-      .then(r=>r.json())
-      .then(data=>{
-        let table=document.getElementById("queue-table");
-        table.innerHTML=`<tr><th>Quantity</th><th>Product</th><th>First Name</th><th>Last Name</th><th>City</th><th>State</th><th>Action</th></tr>`;
-        data.queue.forEach((item,index)=>{
-          let row=document.createElement("tr");
-          row.id=`row-${index}`;
-          row.innerHTML=`
-            <td>${item.quantity}</td>
-            <td>${item.product_name}</td>
-            <td>${item.first_name}</td>
-            <td>${item.last_name.charAt(0)}.</td>
-            <td>${item.city}</td>
-            <td>${item.state}</td>
-            <td id="status-${index}">
-              ${item.completed ? '<span class="done-mark">✔ All Done</span>' : `<button class="done-btn" onclick="markAsDone(${index})">Let's Open the Pack</button>`}
-            </td>`;
-          table.appendChild(row);
+        .then(r => r.json())
+        .then(data => {
+          const table = document.getElementById("queue-table");
+          table.innerHTML = `
+            <tr>
+              <th>Quantity</th><th>Product</th><th>First Name</th><th>Last Name</th><th>City</th><th>State</th><th>Action</th>
+            </tr>
+          `;
+
+          (data.queue || []).forEach((item, index) => {
+            const row = document.createElement("tr");
+            row.id = `row-${index}`;
+            row.innerHTML = `
+              <td>${item.quantity}</td>
+              <td>${item.product_name}</td>
+              <td>${item.first_name}</td>
+              <td>${(item.last_name || "").charAt(0)}.</td>
+              <td>${item.city}</td>
+              <td>${item.state}</td>
+              <td id="status-${index}">
+                ${item.completed
+                  ? '<span class="done-mark">✔ All Done</span>'
+                  : `<button class="done-btn" onclick="markAsDone(${index})">Let's Open the Pack</button>`
+                }
+              </td>
+            `;
+            table.appendChild(row);
+          });
         });
-      });
     }
 
-    function clearQueue(){ fetch('/clear_queue',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    function clearBattle(){ fetch('/clear_battle',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    function Energy(){ fetch('/start-slot-machine',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    function clearPreorder(){ fetch('/clear_preorderqueue',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
+    function clearQueue(){ fetch('/clear_queue', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+    function clearBattle(){ fetch('/clear_battle', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+    function runEnergy(){ fetch('/start-slot-machine', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+    function clearPreorder(){ fetch('/clear_preorderqueue', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
 
-    
-    function minusCount(){ fetch('/minus_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    function minusCount2(){ fetch('/minus_count2',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    // ✅ New addCount function
-    function addCount(){ fetch('/add_count',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    function addCount2(){ fetch('/add_count2',{method:'POST'}).then(r=>{if(r.ok)fetchQueue();}); }
-    setInterval(fetchQueue,3000);
+    function addCount(){ fetch('/add_count', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+    function minusCount(){ fetch('/minus_count', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
 
-    /* ====== Minimal config panel logic ====== */
+    function addCount2(){ fetch('/add_count2', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+    function minusCount2(){ fetch('/minus_count2', {method:'POST'}).then(r => { if(r.ok) fetchQueue(); }); }
+
+    // Refresh queue every 3 seconds
+    setInterval(fetchQueue, 3000);
+
+    // -----------------------
+    // Pokeball config panel
+    // -----------------------
     const PKCFG = {
       elToggle:  document.getElementById('pkcfg_gateToggle'),
       elStatus:  document.getElementById('pkcfg_status'),
@@ -208,26 +241,85 @@
           this.setStatus('Updating…');
           const cfg = await this.setGate(this.elToggle.checked);
           const on = !!cfg.gate_id1_last10;
-          this.elToggle.checked = on; // reflect server state
+          this.elToggle.checked = on;
           this.setStatus(on ? 'Gate: ON' : 'Gate: OFF', true);
         }catch(e){
           console.error(e);
           this.setStatus('Update failed', false);
-          // revert to server truth
           this.refresh();
         }
       },
 
       init(){
-        this.btnRef.addEventListener('click', ()=>this.refresh());
-        this.elToggle.addEventListener('change', ()=>this.applyToggle());
-        // initial
+        this.btnRef.addEventListener('click', () => this.refresh());
+        this.elToggle.addEventListener('change', () => this.applyToggle());
         this.refresh();
       }
     };
-
-    // Initialize config panel without touching existing logic
     PKCFG.init();
+
+    // -----------------------
+    // Group Buy controls (+1 / -1)
+    // -----------------------
+    const ADMIN_SECRET = "6888richmond"; // keep aligned with backend
+    const gbSoldBadge = document.getElementById("gbSoldBadge");
+
+    function showAdminMsg(msg){
+      const el = document.getElementById("adminMsg");
+      el.style.display = "inline-block";
+      el.textContent = msg;
+      setTimeout(() => { el.style.display = "none"; }, 2500);
+    }
+
+    async function refreshGroupBuyStatus(){
+      try{
+        const r = await fetch("/api/group-buy-status", { cache: "no-store" });
+        if(!r.ok) throw new Error("status failed");
+        const s = await r.json();
+        gbSoldBadge.textContent = `Group Sold: ${s.sold}/${s.total}`;
+      }catch(e){
+        gbSoldBadge.textContent = "Group Sold: (error)";
+      }
+    }
+
+    async function plusOne(){
+      try{
+        const r = await fetch("/api/group-buy/plus-one", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ secret: ADMIN_SECRET })
+        });
+        const data = await r.json();
+        showAdminMsg(r.ok ? "Updated (+1)" : ("Error: " + (data.error || r.status)));
+      }catch(e){
+        showAdminMsg("Error: request failed");
+      }finally{
+        refreshGroupBuyStatus();
+      }
+    }
+
+    async function minusOne(){
+      try{
+        const r = await fetch("/api/group-buy/minus-one", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ secret: ADMIN_SECRET })
+        });
+        const data = await r.json();
+        showAdminMsg(r.ok ? "Updated (-1)" : ("Error: " + (data.error || r.status)));
+      }catch(e){
+        showAdminMsg("Error: request failed");
+      }finally{
+        refreshGroupBuyStatus();
+      }
+    }
+
+    document.getElementById("btnPlus").addEventListener("click", plusOne);
+    document.getElementById("btnMinus").addEventListener("click", minusOne);
+
+    // Initial + periodic refresh of group buy sold
+    refreshGroupBuyStatus();
+    setInterval(refreshGroupBuyStatus, 5000);
   </script>
 </body>
 </html>
